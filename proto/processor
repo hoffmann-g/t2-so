@@ -1,0 +1,17 @@
+- pc
+- registers[]
+- interruption?
+
+while (true) in another thread
+    if (interruption in)
+        rot = rot_addresses[in.type] : func
+        (pc, registers) = rot()
+        pc = pc
+        registers = registers
+
+    exec(pc)
+    pc++
+
+
+exec
+    ram.data[pc]

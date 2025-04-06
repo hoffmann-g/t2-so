@@ -1,0 +1,78 @@
+MEMORY:
+    interruption_bits[]
+
+    data[address] = {
+        value
+    }
+
+    KERNEL:
+        rot_addresses[interruption_type] = {
+            time_interruption : func timer_interruption() {
+                interruption_bits[x] = 1
+        
+                KERNEL.escalonador()
+            }
+            io_interruption : io_interruption(){
+                interruption_bits[y] = 1
+
+                ...
+                // put in ready_processes a process to move input into buffer
+                KERNEL.escalonador()
+            }
+        }
+
+        current_process : process_pid
+        
+        ready_processes[pid] = {
+            PCB {
+                status = READY / BLOCKED / ... / RUNNING
+                registers
+            }
+        }
+
+        GM:
+            pagination_tables[pid] = {
+                (page1, frame1)
+                (page2, frame3)
+            }
+
+            func allocate(process)
+                divide process in frames
+
+                for each frame in data
+                    if process is using, continue
+                    alocate process_frame into frame
+
+            func deallocate
+                pagination_tables.remove(pid)
+
+        PM:
+            func create_process(process)
+                ready_processes.add(process{status=READY})
+            
+            func destroy_process(process)
+                ready_processes.remove(process)
+        
+        ESCALONADOR:
+            func escalonar()
+                // salva o estado do processo atual
+                ready_processes[current_process].registers = cpu.registers
+                ready_processes[current_process].registers.pc = cpu.registers.pc
+
+                // escolhe processo    
+                next_process = getnextprocess(ready_processes)
+                current_process = next_process.pid
+
+                // seta o estado do processo para a cpu
+                cpu.registers = ready_processes[current_process].registers
+                cpu.registers.pc = ready_processes[current_process].registers.pc
+
+                // itera sobre a lista de processos e destroi os finalizados
+                // destroy_process(process)
+
+                // define o status do processo como rodando
+                ready_processes[current_process].status = RUNNING
+
+                return
+
+
