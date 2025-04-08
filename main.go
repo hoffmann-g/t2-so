@@ -3,9 +3,10 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/gorilla/websocket"
 	"net/http"
 	"time"
+
+	"github.com/gorilla/websocket"
 )
 
 var upgrader = websocket.Upgrader{
@@ -39,7 +40,7 @@ func handleWS(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func main() {
+func runServer() {
 	http.HandleFunc("/ws", handleWS)
 	http.Handle("/", http.FileServer(http.Dir("static")))
 	fmt.Println("Servidor rodando em http://localhost:8080")
