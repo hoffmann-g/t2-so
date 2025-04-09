@@ -1,4 +1,4 @@
-package processor
+package main
 
 import (
 	"encoding/json"
@@ -14,12 +14,11 @@ type StateMessage struct {
 	Data              []any
 }
 
-// TODO: PASS DATA AS POINTER
-func SendMessage(data []any, p *Processor) {
+func SendMessage(data [MemorySize]any, p *Processor) {
 	if p.conn != nil {
 		// Create a copy of the data slice for modification
 		modifiedData := make([]any, len(data))
-		copy(modifiedData, data)
+		copy(modifiedData, data[:])
 
 		for i, v := range modifiedData {
 			if fn, ok := v.(func(*Processor)); ok {

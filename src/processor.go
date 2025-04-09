@@ -1,11 +1,12 @@
-package processor
+package main
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/gorilla/websocket"
 )
+
+var k *Kernel
 
 type Processor struct {
 	Interruption_bits map[int]bool
@@ -15,44 +16,46 @@ type Processor struct {
 	conn *websocket.Conn
 }
 
-func (p *Processor) Init() {
+func (p *Processor) Init(kernel *Kernel) {
 	p.Interruption_bits = make(map[int]bool)
 	p.Registers = make(map[string]any)
 
 	p.Interruption_bits[0] = false
 	p.Interruption_bits[1] = false
 
-	p.Pc = 11
+	p.Pc = 0
 
-	p.Registers["R0"] = 0
-	p.Registers["R1"] = 0
-	p.Registers["R2"] = 0
-	p.Registers["R3"] = 0
+	p.Registers["$t0"] = 0
+	p.Registers["$t1"] = 0
+	p.Registers["$t2"] = 0
+	p.Registers["$t3"] = 0
+
+	k = kernel
 }
 
-// TODO: PASS DATA AS POINTER
-func (p *Processor) Run(data []any) {
-	time.Sleep(5 * time.Second)
-
+func (p *Processor) Run(data *[MemorySize]any) {
+	// time.Sleep(5 * time.Second)
 	for {
 		if p.Pc%10 == 0 {
 			p.setInterruptionBit(0, true)
 		}
 
-		SendMessage(data, p)
+		if k.ProcessManager.CurrentProcessPID == 0 {
+			continue
+		}
+
+		SendMessage(*data, p)
 
 		interruptionBit, isrAddress := p.getInterruptionServiceRoutineAddress()
 		if interruptionBit != -1 {
 			p.setInterruptionBit(interruptionBit, false)
 
-			if isr, ok := data[isrAddress].(func(*Processor)); ok {
+			if isr, ok := (*data)[isrAddress].(func(*Processor)); ok {
 				isr(p)
-			} else {
-				fmt.Println("Error: ISR not found")
 			}
 		}
 
-		if instruction, ok := data[p.Pc].(func()); ok {
+		if instruction, ok := (*data)[k.MemoryManager.GetPhysicalPcAddress(p.Pc)].(func()); ok {
 			instruction()
 		}
 
