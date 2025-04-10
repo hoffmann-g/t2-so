@@ -4,7 +4,7 @@ import (
 	"errors"
 )
 
-var ProgramList = map[string][]func(p *Processor){
+var ProgramList = map[string][]func(){
 	"notes": Program1,
 	"nav":   Program2,
 }
@@ -12,7 +12,7 @@ var ProgramList = map[string][]func(p *Processor){
 type ProcessControlBlock struct {
 	PID           int
 	Status        string
-	Program       []func(p *Processor)
+	Program       []func()
 	ProgramLength int
 	Pc            int
 	Registers     map[string]any

@@ -24,6 +24,7 @@ func (p *Processor) Init() {
 
 	p.InterruptionBits[0] = false
 	p.InterruptionBits[1] = false
+	p.InterruptionBits[2] = false
 
 	p.Pc = 0
 
@@ -31,24 +32,24 @@ func (p *Processor) Init() {
 	p.Registers["$t1"] = 0
 	p.Registers["$t2"] = 0
 	p.Registers["$t3"] = 0
+
+	p.Registers["$v0"] = 0
+	p.Registers["$v1"] = 0
+	p.Registers["$v2"] = 0
+	p.Registers["$v3"] = 0
 }
 
 func (p *Processor) Run() {
 	for {
-		// if p.Pc%10 == 0 {
-		// 	p.setInterruptionBit(0, true)
-		// }
+		if p.Pc%10 == 0 && p.Pc != 0 {
+			p.InterruptionBits[0] = true
+		}
 
 		time.Sleep(1 * time.Second)
-		SendMessage()
+		SendStatusToWS()
 
 		if kernel.PMU.CurrentProcessPID == -1 {
 			continue
-		}
-
-		bit, isrAddress, occured := p.getInterruptionServiceRoutineAddress()
-		if occured {
-			p.handleInterruption(bit, isrAddress)
 		}
 
 		p.executeInstruction()
@@ -56,45 +57,53 @@ func (p *Processor) Run() {
 	}
 }
 
+func (p *Processor) executeInstruction() {
+	if instruction, ok := (Data)[kernel.MMU.GetPhysicalPcAddress(p.Pc)].(func()); ok {
+		instruction()
+	}
+}
+
 func (p *Processor) handlePc() {
+	if p.InterruptionBits[0] {
+		p.saveCurrentProcessStatus()
+		p.jumpToAddress(TimeISRStart)
+		processor.InterruptionBits[0] = false
+		processor.InterruptionBits[2] = true
+		return
+	}
+
+	if p.InterruptionBits[1] {
+		p.saveCurrentProcessStatus()
+		p.jumpToAddress(IOISRStart)
+		processor.InterruptionBits[1] = false
+		processor.InterruptionBits[2] = true
+		return
+	}
+
 	process, _ := kernel.PMU.GetRunningProcess()
 
 	if p.Pc < (process.ProgramLength - 1) {
 		p.Pc++
 	} else {
+		//p.Registers["$v0"] = kernel.PMU.CurrentProcessPID
+		//p.jumpToAddress(DestroyProcessStart)
 		kernel.PMU.DestroyProcess(kernel.PMU.CurrentProcessPID)
 	}
 }
 
-func (p *Processor) handleInterruption(bit int, isrAddress int) {
-	p.InterruptionBits[bit] = false
-
-	if isr, ok := (Data)[isrAddress].(func(*Processor)); ok {
-		isr(p)
-	} else {
-		LogDebug("Error: ISR not found")
-	}
+func (p *Processor) jumpToAddress(address int) {
+	p.Pc = address
 }
 
-func (p *Processor) executeInstruction() {
-	if instruction, ok := (Data)[kernel.MMU.GetPhysicalPcAddress(p.Pc)].(func(*Processor)); ok {
-		instruction(p)
-	}
-}
+func (p *Processor) saveCurrentProcessStatus() {
+	for i := range kernel.PMU.ReadyProcesses {
+		if kernel.PMU.ReadyProcesses[i].PID != kernel.PMU.CurrentProcessPID {
+			continue
+		}
 
-func (p *Processor) getInterruptionServiceRoutineAddress() (int, int, bool) {
-	rot_adresses := map[int]int{
-		0: 0x000000,
-		1: 0x000001,
-	}
+		kernel.PMU.ReadyProcesses[i].Pc = processor.Pc
+		kernel.PMU.ReadyProcesses[i].Registers = processor.Registers
 
-	if p.InterruptionBits[0] {
-		return 0, (rot_adresses[0]), true
+		break
 	}
-
-	if p.InterruptionBits[1] {
-		return 1, (rot_adresses[1]), true
-	}
-
-	return -1, -1, false
 }

@@ -13,9 +13,9 @@ var (
 
 	KernelStart = 4
 
-	ISRStart = KernelStart
-	TimeISR  = ISRStart
-	IOISR    = TimeISR + 1
+	ISRStart     = KernelStart
+	TimeISRStart = ISRStart
+	IOISRStart   = TimeISRStart + 1
 
 	MMUStart              = ISRStart + 4
 	DealocateProcessStart = MMUStart
@@ -25,7 +25,7 @@ var (
 	CreateProcessStart  = PMUStart
 	DestroyProcessStart = CreateProcessStart + 1
 
-	ScalonatorStart         = PMUStart + 4
+	ScalonatorStart         = PMUStart + 3
 	ScalonateProcessesStart = ScalonatorStart
 
 	KernelEnd = ScalonatorStart + 4
@@ -40,8 +40,8 @@ func LoadKernelIntoMemory() {
 		kernel.MMU.FrameTable[i] = false
 	}
 
-	Data[TimeISR] = kernel.TimeISR
-	Data[IOISR] = kernel.IOISR
+	Data[TimeISRStart] = kernel.TimeISR
+	Data[IOISRStart] = kernel.IOISR
 
 	Data[DealocateProcessStart] = kernel.MMU.DeallocateProcess
 	Data[AllocateProcessStart] = kernel.MMU.AllocateProcess
@@ -57,8 +57,8 @@ type Kernel struct {
 	MMU        *MemoryManager
 	Scalonator *Scalonator
 
-	TimeISR func(*Processor)
-	IOISR   func(*Processor)
+	TimeISR func()
+	IOISR   func()
 }
 
 func (k *Kernel) Init() {
@@ -74,12 +74,13 @@ func (k *Kernel) Init() {
 	k.IOISR = k.ioInterruptionRoutine
 }
 
-func (k *Kernel) timeInterruptionRoutine(processor *Processor) {
+func (k *Kernel) timeInterruptionRoutine() {
 	LogTrace("Time interruption routine")
 
-	k.Scalonator.Scalonate()
+	processor.jumpToAddress(ScalonateProcessesStart - 1)
+	// k.Scalonator.Scalonate()
 }
 
-func (k *Kernel) ioInterruptionRoutine(processor *Processor) {
+func (k *Kernel) ioInterruptionRoutine() {
 	LogTrace("I/O interruption routine")
 }

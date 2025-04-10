@@ -16,7 +16,7 @@ type StateMessage struct {
 	Data             []any
 }
 
-func SendMessage() {
+func SendStatusToWS() {
 	if processor.Conn != nil {
 		modifiedData := make([]any, len(Data))
 		copy(modifiedData, Data[:])

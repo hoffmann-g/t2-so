@@ -94,9 +94,12 @@ func (mm *MemoryManager) DeallocateProcess(p ProcessControlBlock) {
 }
 
 func (mm *MemoryManager) GetPhysicalPcAddress(pc int) int {
-	if kernel.PMU.CurrentProcessPID < 1 {
-		// LogDebug("No process is running")
+	if kernel.PMU.CurrentProcessPID == -1 {
 		return IdleStatePc
+	}
+
+	if processor.InterruptionBits[2] {
+		return pc
 	}
 
 	currentProcessPid := kernel.PMU.CurrentProcessPID
