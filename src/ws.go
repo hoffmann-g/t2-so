@@ -14,11 +14,11 @@ type StateMessage struct {
 	Data              []any
 }
 
-func SendMessage(data [MemorySize]any, p *Processor) {
-	if p.conn != nil {
+func SendMessage() {
+	if proc.conn != nil {
 		// Create a copy of the data slice for modification
-		modifiedData := make([]any, len(data))
-		copy(modifiedData, data[:])
+		modifiedData := make([]any, len(Data))
+		copy(modifiedData, Data[:])
 
 		for i, v := range modifiedData {
 			if fn, ok := v.(func(*Processor)); ok {
@@ -27,9 +27,9 @@ func SendMessage(data [MemorySize]any, p *Processor) {
 		}
 
 		stateMsg := StateMessage{
-			Interruption_bits: p.Interruption_bits,
-			Pc:                k.MemoryManager.GetPhysicalPcAddress(p.Pc),
-			Registers:         p.Registers,
+			Interruption_bits: proc.Interruption_bits,
+			Pc:                k.MemoryManager.GetPhysicalPcAddress(proc.Pc),
+			Registers:         proc.Registers,
 			Data:              modifiedData,
 		}
 
@@ -38,7 +38,7 @@ func SendMessage(data [MemorySize]any, p *Processor) {
 			fmt.Println("Failed to marshal message:", error)
 		}
 
-		if err := p.conn.WriteMessage(websocket.TextMessage, jsonMsg); err != nil {
+		if err := proc.conn.WriteMessage(websocket.TextMessage, jsonMsg); err != nil {
 			fmt.Println("Failed to send message:", err)
 			return
 		}

@@ -49,7 +49,16 @@ func HandleShell() {
 				break
 			}
 			pid := tokens[1]
+			pidInt, convErr := strconv.Atoi(pid)
+			if convErr != nil {
+				fmt.Println("Invalid PID:", pid)
+				break
+			}
 
+			err := k.ProcessManager.DestroyProcess(pidInt)
+			if err != nil {
+				fmt.Println("Error killing process:", err)
+			}
 			fmt.Println("Killed process with PID:", pid)
 
 		case "dump":

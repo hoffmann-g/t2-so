@@ -31,6 +31,7 @@ func (p *Processor) Init() {
 	p.Registers["$t3"] = 0
 
 	k = &Kernel{}
+	k.Init()
 }
 
 func (p *Processor) Run() {
@@ -40,16 +41,13 @@ func (p *Processor) Run() {
 		// 	p.setInterruptionBit(0, true)
 		// }
 
-		// println("PC: ", p.Pc, "\n")
-		if k.ProcessManager.CurrentProcessPID == 0 {
+		if k.ProcessManager.CurrentProcessPID == -1 {
 			time.Sleep(1 * time.Second)
+			SendMessage()
 			continue
 		}
 
-		// println("PC: ", p.Pc, "\n")
-		// print("Current PID: ", k.ProcessManager.CurrentProcessPID, "\n")
-
-		SendMessage(Data, p)
+		SendMessage()
 
 		interruptionBit, isrAddress := p.getInterruptionServiceRoutineAddress()
 		if interruptionBit != -1 {
@@ -61,15 +59,15 @@ func (p *Processor) Run() {
 		}
 
 		if instruction, ok := (Data)[k.MemoryManager.GetPhysicalPcAddress(p.Pc)].(func(*Processor)); ok {
-			// print("Executing instruction at PC: ", p.Pc, "\n")
 			instruction(p)
 		}
 
 		time.Sleep(1 * time.Second)
-		if p.Pc < k.ProcessManager.ReadyProcesses[k.ProcessManager.CurrentProcessPID-1].ProgramLength {
+
+		process, _ := k.ProcessManager.GetRunningProcess()
+		if p.Pc < (process.ProgramLength - 1) {
 			p.Pc++
 		} else {
-			p.Pc = 0
 			k.ProcessManager.DestroyProcess(k.ProcessManager.CurrentProcessPID)
 		}
 	}

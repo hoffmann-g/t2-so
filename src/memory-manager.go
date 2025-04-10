@@ -29,6 +29,8 @@ func (mm *MemoryManager) Init() {
 	mm.FrameTable[2].IsFree = false
 	mm.FrameTable[3].IsFree = false
 	mm.FrameTable[4].IsFree = false
+
+	// mm.FrameTable[6].IsFree = false
 }
 
 func (mm *MemoryManager) AllocateProcess(p ProcessControlBlock) bool {
@@ -66,11 +68,15 @@ func (mm *MemoryManager) AllocateProcess(p ProcessControlBlock) bool {
 	// save page table for the process
 	mm.PaginationTable[p.PID] = pageTable
 
-	// Print the pagination table for debugging purposes
-	// println("Pagination Table for PID", p.PID, ":")
-	// for page, frame := range pageTable {
-	// 	println("Page", page, "-> Frame", frame)
-	// }
+	println("Current PID:", p.PID)
+	for page, frame := range k.MemoryManager.PaginationTable[p.PID] {
+		println("Page:", page, "Frame:", frame)
+	}
+	for i, frame := range k.MemoryManager.FrameTable {
+		if !frame.IsFree {
+			println("Frame:", i, "Is used")
+		}
+	}
 
 	return true
 }
@@ -83,11 +89,25 @@ func (mm *MemoryManager) DeallocateProcess(p ProcessControlBlock) {
 	}
 
 	delete(mm.PaginationTable, p.PID)
+	// mm.PaginationTable[p.PID] = pageTable
+
+	if _, exists := mm.PaginationTable[p.PID]; !exists {
+		println("Page is not present")
+	}
+
+	for i, frame := range k.MemoryManager.FrameTable {
+		if !frame.IsFree {
+			println("Frame:", i, "Is used")
+		}
+	}
 
 	// NO NEED FOR ITERATING THROUGH DATA AND SETTING IT TO NIL
 }
 
 func (mm *MemoryManager) GetPhysicalPcAddress(pc int) int {
+	if k.ProcessManager.CurrentProcessPID < 1 {
+		return 10
+	}
 	// println("Current PC: ", pc, "\n")
 
 	currentProcessPid := k.ProcessManager.CurrentProcessPID

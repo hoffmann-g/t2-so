@@ -5,8 +5,8 @@ import (
 )
 
 var ProgramList = map[string][]func(p *Processor){
-	"notes":     Program1,
-	"navigator": Program2,
+	"notes": Program1,
+	"nav":   Program2,
 }
 
 type ProcessControlBlock struct {
@@ -26,7 +26,7 @@ type ProcessManager struct {
 }
 
 func (pm *ProcessManager) Init(mm *MemoryManager) {
-	pm.CurrentProcessPID = 0
+	pm.CurrentProcessPID = -1
 	pm.ReadyProcesses = []ProcessControlBlock{}
 
 	pm.MemoryManager = mm
@@ -35,7 +35,7 @@ func (pm *ProcessManager) Init(mm *MemoryManager) {
 func (pm *ProcessManager) CreateProcess(process_name string) (int, error) {
 	program, exists := ProgramList[process_name]
 	if !exists {
-		return 0, errors.New("Program not found")
+		return 0, errors.New("program not found")
 	}
 
 	pcb := ProcessControlBlock{
@@ -48,7 +48,7 @@ func (pm *ProcessManager) CreateProcess(process_name string) (int, error) {
 	}
 
 	if !pm.MemoryManager.AllocateProcess(pcb) {
-		return 0, errors.New("Not enough memory to allocate process, please kill yourself")
+		return 0, errors.New("not enough memory to allocate process, please kill yourself")
 	}
 
 	pm.ReadyProcesses = append(pm.ReadyProcesses, pcb)
@@ -58,41 +58,43 @@ func (pm *ProcessManager) CreateProcess(process_name string) (int, error) {
 	return pcb.PID, nil
 }
 
-func (pm *ProcessManager) DestroyProcess(pid int) {
+func (pm *ProcessManager) DestroyProcess(pid int) error {
 	for i, process := range pm.ReadyProcesses {
 		if process.PID == pid {
 			pm.ReadyProcesses[i].Status = "TERMINATED"
 
 			pm.MemoryManager.DeallocateProcess(process)
-			pm.CurrentProcessPID = 0
-
-			// k.Scalonator.Scalonate()
-			break
-		}
-	}
-}
-
-func (pm *ProcessManager) Execute(pid int) error {
-	for i, process := range pm.ReadyProcesses {
-		if process.PID == pid {
-			pm.ReadyProcesses[i].Status = "READY"
 
 			k.Scalonator.Scalonate()
 			return nil
 		}
 	}
-	return errors.New("Process not found")
+	return errors.New("process not found")
 }
 
-// func (pm *ProcessManager) Execute(pid int) error {
-// 	for i, process := range pm.ReadyProcesses {
-// 		if process.PID == pid {
-// 			pm.ReadyProcesses[i].Status = "READY"
+func (pm *ProcessManager) Execute(pid int) error {
+	for i, process := range pm.ReadyProcesses {
+		if process.PID != pid {
+			continue
+		}
+		if process.Status != "ADDED" {
+			return errors.New("process already running")
+		}
 
-// 			pm.CurrentProcessPID = pid
+		pm.ReadyProcesses[i].Status = "READY"
 
-// 			return nil
-// 		}
-// 	}
-// 	return errors.New("Error: Process not found")
-// }
+		k.Scalonator.Scalonate()
+		return nil
+
+	}
+	return errors.New("process not found")
+}
+
+func (pm *ProcessManager) GetRunningProcess() (ProcessControlBlock, bool) {
+	for _, process := range pm.ReadyProcesses {
+		if process.Status == "RUNNING" {
+			return process, true
+		}
+	}
+	return ProcessControlBlock{}, false
+}

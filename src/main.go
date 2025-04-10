@@ -46,8 +46,6 @@ func runServer() {
 
 func main() {
 	fmt.Println("Initializing kernel...")
-	kernel := &Kernel{}
-	kernel.Init()
 
 	fmt.Println("Initializing processor...")
 	proc = &Processor{}

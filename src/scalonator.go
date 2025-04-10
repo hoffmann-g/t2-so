@@ -9,18 +9,13 @@ func (s *Scalonator) Scalonate() {
 	// fmt.Println("Scalonating processes 😈")
 
 	// save state of the current process
-	for i := 0; i < len(k.ProcessManager.ReadyProcesses); i++ {
-		if k.ProcessManager.ReadyProcesses[i].Status == "TERMINATED" {
-			k.ProcessManager.ReadyProcesses = append(k.ProcessManager.ReadyProcesses[:i], k.ProcessManager.ReadyProcesses[i+1:]...)
-			i--
-		}
-
+	for i := range k.ProcessManager.ReadyProcesses {
 		if k.ProcessManager.ReadyProcesses[i].Status != "RUNNING" {
 			continue
 		}
 
 		k.ProcessManager.ReadyProcesses[i].Status = "READY"
-		k.ProcessManager.ReadyProcesses[i].Pc = proc.Pc + 1
+		k.ProcessManager.ReadyProcesses[i].Pc = proc.Pc
 		k.ProcessManager.ReadyProcesses[i].Registers = proc.Registers
 
 		break
@@ -31,13 +26,18 @@ func (s *Scalonator) Scalonate() {
 			continue
 		}
 
-		k.ProcessManager.CurrentProcessPID = k.ProcessManager.ReadyProcesses[i].PID
+		println("Process", process.PID, "is ready")
 
-		proc.Pc = k.ProcessManager.ReadyProcesses[i].Pc
-		proc.Registers = k.ProcessManager.ReadyProcesses[i].Registers
+		k.ProcessManager.CurrentProcessPID = process.PID
+		println("Current process PID:", k.ProcessManager.CurrentProcessPID)
+
+		proc.Pc = process.Pc
+		proc.Registers = process.Registers
 
 		k.ProcessManager.ReadyProcesses[i].Status = "RUNNING"
 
-		break
+		return
 	}
+
+	k.ProcessManager.CurrentProcessPID = -1
 }
