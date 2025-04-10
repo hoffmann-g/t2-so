@@ -54,18 +54,21 @@ func (pm *ProcessManager) CreateProcess(process_name string) (int, error) {
 	return pcb.PID, nil
 }
 
-func (pm *ProcessManager) DestroyProcess(pid int) error {
+func (pm *ProcessManager) DestroyProcess() {
+	pid := processor.Registers["$v0"].(int)
+
 	for i, process := range pm.ReadyProcesses {
 		if process.PID == pid {
-			pm.ReadyProcesses[i].Status = "TERMINATED"
+			pm.ReadyProcesses[i].Status = "ZOMBIE"
 
-			kernel.MMU.DeallocateProcess(process)
+			kernel.MMU.DeallocateProcess(process.PID)
 
-			kernel.Scalonator.Scalonate()
-			return nil
+			// LogTrace("Setting next PC to: " + fmt.Sprint(ScalonateProcessesStart-1))
+			processor.setNextPc(ScalonateProcessesStart)
+			// kernel.Scalonator.Scalonate()
+			return
 		}
 	}
-	return errors.New("process not found")
 }
 
 func (pm *ProcessManager) Execute(pid int) error {

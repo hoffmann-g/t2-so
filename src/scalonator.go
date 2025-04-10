@@ -6,8 +6,10 @@ type Scalonator struct {
 func (s *Scalonator) Init() {}
 
 func (s *Scalonator) Scalonate() {
-	LogTrace("Scalonating processes 😈")
-	processor.InterruptionBits[2] = false
+	// LogTrace("Scalonating processes 😈")
+	// kernel.PMU.CurrentProcessPID = -1
+	// processor.InterruptionBits[2] = false]
+	// THIS DOESNT HAVE TIME TO EXECUTE
 
 	for i := range kernel.PMU.ReadyProcesses {
 		if kernel.PMU.ReadyProcesses[i].PID != kernel.PMU.CurrentProcessPID {
@@ -19,7 +21,7 @@ func (s *Scalonator) Scalonate() {
 		break
 	}
 
-	LogTrace("Searching for a process to run")
+	// LogTrace("Searching for a process to run")
 
 	for i, process := range kernel.PMU.ReadyProcesses {
 		if process.Status != "READY" {
@@ -32,10 +34,11 @@ func (s *Scalonator) Scalonate() {
 
 		kernel.PMU.ReadyProcesses[i].Status = "RUNNING"
 
-		LogTrace("Process set to run")
+		// LogTrace("Process set to run")
 		return
 	}
 
 	kernel.PMU.CurrentProcessPID = -1
+	processor.InterruptionBits[2] = false
 	LogDebug("Entering idle state")
 }

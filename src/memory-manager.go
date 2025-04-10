@@ -72,34 +72,28 @@ func (mm *MemoryManager) AllocateProcess(p ProcessControlBlock) bool {
 	return true
 }
 
-func (mm *MemoryManager) DeallocateProcess(p ProcessControlBlock) {
-	pageTable := mm.ProcessPageTables[p.PID]
+func (mm *MemoryManager) DeallocateProcess(pid int) {
+	pageTable := mm.ProcessPageTables[pid]
 	for _, frame := range pageTable {
 		mm.FrameTable[frame] = true
 	}
 
-	delete(mm.ProcessPageTables, p.PID)
+	delete(mm.ProcessPageTables, pid)
 
-	if _, exists := mm.ProcessPageTables[p.PID]; !exists {
-		LogDebug("Page is not present")
-	}
-
-	for i, frame := range kernel.MMU.FrameTable {
-		if !frame {
-			LogDebug(fmt.Sprintf("Frame: %d Is used", i))
-		}
+	if _, exists := mm.ProcessPageTables[pid]; !exists {
+		// LogDebug("Page table deleted")
 	}
 
 	// NO NEED FOR ITERATING THROUGH DATA AND SETTING IT TO NIL
 }
 
 func (mm *MemoryManager) GetPhysicalPcAddress(pc int) int {
-	if kernel.PMU.CurrentProcessPID == -1 {
-		return IdleStatePc
-	}
-
 	if processor.InterruptionBits[2] {
 		return pc
+	}
+
+	if kernel.PMU.CurrentProcessPID == -1 {
+		return IdleStatePc
 	}
 
 	currentProcessPid := kernel.PMU.CurrentProcessPID
