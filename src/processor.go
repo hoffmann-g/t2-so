@@ -16,7 +16,7 @@ type Processor struct {
 	conn *websocket.Conn
 }
 
-func (p *Processor) Init(kernel *Kernel) {
+func (p *Processor) Init() {
 	p.Interruption_bits = make(map[int]bool)
 	p.Registers = make(map[string]any)
 
@@ -30,37 +30,48 @@ func (p *Processor) Init(kernel *Kernel) {
 	p.Registers["$t2"] = 0
 	p.Registers["$t3"] = 0
 
-	k = kernel
+	k = &Kernel{}
 }
 
-func (p *Processor) Run(data *[MemorySize]any) {
+func (p *Processor) Run() {
 	// time.Sleep(5 * time.Second)
 	for {
-		if p.Pc%10 == 0 {
-			p.setInterruptionBit(0, true)
-		}
+		// if p.Pc%10 == 0 {
+		// 	p.setInterruptionBit(0, true)
+		// }
 
+		// println("PC: ", p.Pc, "\n")
 		if k.ProcessManager.CurrentProcessPID == 0 {
+			time.Sleep(1 * time.Second)
 			continue
 		}
 
-		SendMessage(*data, p)
+		// println("PC: ", p.Pc, "\n")
+		// print("Current PID: ", k.ProcessManager.CurrentProcessPID, "\n")
+
+		SendMessage(Data, p)
 
 		interruptionBit, isrAddress := p.getInterruptionServiceRoutineAddress()
 		if interruptionBit != -1 {
 			p.setInterruptionBit(interruptionBit, false)
 
-			if isr, ok := (*data)[isrAddress].(func(*Processor)); ok {
+			if isr, ok := (Data)[isrAddress].(func(*Processor)); ok {
 				isr(p)
 			}
 		}
 
-		if instruction, ok := (*data)[k.MemoryManager.GetPhysicalPcAddress(p.Pc)].(func()); ok {
-			instruction()
+		if instruction, ok := (Data)[k.MemoryManager.GetPhysicalPcAddress(p.Pc)].(func(*Processor)); ok {
+			// print("Executing instruction at PC: ", p.Pc, "\n")
+			instruction(p)
 		}
 
 		time.Sleep(1 * time.Second)
-		p.Pc++
+		if p.Pc < k.ProcessManager.ReadyProcesses[k.ProcessManager.CurrentProcessPID-1].ProgramLength {
+			p.Pc++
+		} else {
+			p.Pc = 0
+			k.ProcessManager.DestroyProcess(k.ProcessManager.CurrentProcessPID)
+		}
 	}
 }
 

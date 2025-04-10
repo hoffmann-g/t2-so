@@ -4,10 +4,11 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 )
 
-func HandleShell(kernel *Kernel) {
+func HandleShell() {
 	fmt.Println("Welcome to the shell!")
 	fmt.Println("Type 'help' for a list of commands.")
 	scanner := bufio.NewScanner(os.Stdin)
@@ -35,7 +36,12 @@ func HandleShell(kernel *Kernel) {
 			}
 			programName := tokens[1]
 
-			fmt.Println("Created process from:", programName, "with PID:", 1)
+			pid, err := k.ProcessManager.CreateProcess(programName)
+			if err != nil {
+				fmt.Println("Error creating process:", err)
+				break
+			}
+			fmt.Println("Created process from:", programName, "with PID:", pid)
 
 		case "kill":
 			if len(tokens) < 2 {
@@ -54,7 +60,9 @@ func HandleShell(kernel *Kernel) {
 
 			switch tokens[1] {
 			case "-a":
-				fmt.Println("Dumping all processes...")
+				for _, process := range k.ProcessManager.ReadyProcesses {
+					fmt.Printf("Process PID: %d, Status: %s\n", process.PID, process.Status)
+				}
 			case "-p":
 				if len(tokens) < 3 {
 					fmt.Println("Usage: dump -p <pid>")
@@ -72,8 +80,17 @@ func HandleShell(kernel *Kernel) {
 			}
 
 			pid := tokens[1]
-
-			fmt.Println("Executing process with PID:", pid)
+			pidInt, convErr := strconv.Atoi(pid)
+			if convErr != nil {
+				fmt.Println("Invalid PID:", pid)
+				break
+			}
+			err := k.ProcessManager.Execute(pidInt)
+			if err == nil {
+				fmt.Println("Executing process with PID:", pid)
+			} else {
+				fmt.Println("Error executing process:", err)
+			}
 
 		case "toggle-trace":
 			fmt.Println("Toggling trace mode...")

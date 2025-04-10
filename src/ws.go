@@ -28,7 +28,7 @@ func SendMessage(data [MemorySize]any, p *Processor) {
 
 		stateMsg := StateMessage{
 			Interruption_bits: p.Interruption_bits,
-			Pc:                p.Pc,
+			Pc:                k.MemoryManager.GetPhysicalPcAddress(p.Pc),
 			Registers:         p.Registers,
 			Data:              modifiedData,
 		}

@@ -45,21 +45,22 @@ func runServer() {
 }
 
 func main() {
-	data := &Data
-
 	fmt.Println("Initializing kernel...")
 	kernel := &Kernel{}
 	kernel.Init()
 
 	fmt.Println("Initializing processor...")
 	proc = &Processor{}
-	proc.Init(kernel)
+	proc.Init()
+
+	fmt.Println("Loading kernel into memory...")
+	loadKernelIntoMemory()
 
 	fmt.Println("Running processor in background thread...\n")
-	go proc.Run(data)
+	go proc.Run()
 
 	fmt.Println("Starting observability server on http://localhost:8080\n")
 	go runServer()
 
-	HandleShell(kernel)
+	HandleShell()
 }

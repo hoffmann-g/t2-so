@@ -1,5 +1,7 @@
 package main
 
+var nextPID = 1
+
 type Kernel struct {
 	ProcessManager *ProcessManager
 	MemoryManager  *MemoryManager
@@ -26,7 +28,7 @@ func (k *Kernel) Init() {
 func (k *Kernel) timeInterruptionRoutine(processor *Processor) {
 	// fmt.Println("Time interruption routine")
 
-	k.Scalonator.Scalonate(processor, k.ProcessManager)
+	k.Scalonator.Scalonate()
 }
 
 func (k *Kernel) ioInterruptionRoutine(processor *Processor) {
