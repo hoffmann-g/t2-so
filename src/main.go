@@ -7,7 +7,7 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-var LogLevel string = "INFO"
+var LogLevel string = "DEBUG"
 
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
@@ -24,7 +24,7 @@ func handleWS(w http.ResponseWriter, r *http.Request) {
 
 	LogTrace("Client connected.")
 
-	proc.Conn = conn
+	processor.Conn = conn
 
 	for {
 		_, _, err := conn.ReadMessage()
@@ -46,13 +46,16 @@ func runServer() {
 
 func main() {
 	LogInfo("Initializing processor...")
-	proc.Init()
+	processor.Init()
+
+	LogInfo("Initializing kernel...")
+	kernel.Init()
 
 	LogInfo("Loading kernel into memory...")
-	loadKernelIntoMemory()
+	LoadKernelIntoMemory()
 
 	LogInfo("Running processor in background thread...")
-	go proc.Run()
+	go processor.Run()
 
 	LogInfo("Starting observability server on http://localhost:8080")
 	go runServer()

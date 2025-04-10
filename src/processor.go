@@ -6,8 +6,8 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-var kernel *Kernel
-var proc *Processor
+var kernel *Kernel = &Kernel{}
+var processor *Processor = &Processor{}
 
 type Processor struct {
 	InterruptionBits map[int]bool
@@ -18,6 +18,7 @@ type Processor struct {
 }
 
 func (p *Processor) Init() {
+
 	p.InterruptionBits = make(map[int]bool)
 	p.Registers = make(map[string]any)
 
@@ -30,9 +31,6 @@ func (p *Processor) Init() {
 	p.Registers["$t1"] = 0
 	p.Registers["$t2"] = 0
 	p.Registers["$t3"] = 0
-
-	kernel = &Kernel{}
-	kernel.Init()
 }
 
 func (p *Processor) Run() {

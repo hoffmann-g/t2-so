@@ -2,32 +2,24 @@ package main
 
 import "fmt"
 
-var FrameSize = 8
-
-type Frame struct {
-	IsFree bool
-}
-
 type MemoryManager struct {
+	FrameTable        []bool
 	ProcessPageTables map[int][]int
-	FrameTable        []Frame
 }
 
 func (mm *MemoryManager) Init() {
 	mm.ProcessPageTables = make(map[int][]int)
-	mm.FrameTable = make([]Frame, MemorySize/FrameSize)
+	mm.FrameTable = make([]bool, FrameTableSize)
 
 	for i := range MemorySize / FrameSize {
-		mm.FrameTable[i] = Frame{
-			IsFree: true,
-		}
+		mm.FrameTable[i] = true
 	}
 
-	mm.FrameTable[0].IsFree = false
-	mm.FrameTable[1].IsFree = false
-	mm.FrameTable[2].IsFree = false
-	mm.FrameTable[3].IsFree = false
-	mm.FrameTable[4].IsFree = false
+	mm.FrameTable[0] = false
+	mm.FrameTable[1] = false
+	mm.FrameTable[2] = false
+	mm.FrameTable[3] = false
+	mm.FrameTable[4] = false
 }
 
 func (mm *MemoryManager) AllocateProcess(p ProcessControlBlock) bool {
@@ -39,9 +31,9 @@ func (mm *MemoryManager) AllocateProcess(p ProcessControlBlock) bool {
 	programIndex := 0
 
 	for i := 0; i < len(mm.FrameTable) && frameUsed < pageCount; i++ {
-		if mm.FrameTable[i].IsFree {
+		if mm.FrameTable[i] {
 			// mark frame as used
-			mm.FrameTable[i].IsFree = false
+			mm.FrameTable[i] = false
 
 			// store mapping: page N -> frame i
 			pageTable[frameUsed] = i
@@ -72,7 +64,7 @@ func (mm *MemoryManager) AllocateProcess(p ProcessControlBlock) bool {
 	}
 	LogDebug("Frame Table:")
 	for i, frame := range kernel.MMU.FrameTable {
-		if !frame.IsFree {
+		if !frame {
 			LogDebug(fmt.Sprintf("Frame: %d Is used", i))
 		}
 	}
@@ -83,7 +75,7 @@ func (mm *MemoryManager) AllocateProcess(p ProcessControlBlock) bool {
 func (mm *MemoryManager) DeallocateProcess(p ProcessControlBlock) {
 	pageTable := mm.ProcessPageTables[p.PID]
 	for _, frame := range pageTable {
-		mm.FrameTable[frame].IsFree = true
+		mm.FrameTable[frame] = true
 	}
 
 	delete(mm.ProcessPageTables, p.PID)
@@ -93,7 +85,7 @@ func (mm *MemoryManager) DeallocateProcess(p ProcessControlBlock) {
 	}
 
 	for i, frame := range kernel.MMU.FrameTable {
-		if !frame.IsFree {
+		if !frame {
 			LogDebug(fmt.Sprintf("Frame: %d Is used", i))
 		}
 	}
@@ -103,8 +95,8 @@ func (mm *MemoryManager) DeallocateProcess(p ProcessControlBlock) {
 
 func (mm *MemoryManager) GetPhysicalPcAddress(pc int) int {
 	if kernel.PMU.CurrentProcessPID < 1 {
-		LogDebug("No process is running")
-		return 10
+		// LogDebug("No process is running")
+		return IdleStatePc
 	}
 
 	currentProcessPid := kernel.PMU.CurrentProcessPID

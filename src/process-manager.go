@@ -21,15 +21,11 @@ type ProcessControlBlock struct {
 type ProcessManager struct {
 	CurrentProcessPID int
 	ReadyProcesses    []ProcessControlBlock
-
-	MemoryManager *MemoryManager
 }
 
 func (pm *ProcessManager) Init(mm *MemoryManager) {
 	pm.CurrentProcessPID = -1
 	pm.ReadyProcesses = []ProcessControlBlock{}
-
-	pm.MemoryManager = mm
 }
 
 func (pm *ProcessManager) CreateProcess(process_name string) (int, error) {
@@ -47,7 +43,7 @@ func (pm *ProcessManager) CreateProcess(process_name string) (int, error) {
 		Registers:     make(map[string]any),
 	}
 
-	if !pm.MemoryManager.AllocateProcess(pcb) {
+	if !kernel.MMU.AllocateProcess(pcb) {
 		return 0, errors.New("not enough memory to allocate process, please kill yourself")
 	}
 
@@ -63,7 +59,7 @@ func (pm *ProcessManager) DestroyProcess(pid int) error {
 		if process.PID == pid {
 			pm.ReadyProcesses[i].Status = "TERMINATED"
 
-			pm.MemoryManager.DeallocateProcess(process)
+			kernel.MMU.DeallocateProcess(process)
 
 			kernel.Scalonator.Scalonate()
 			return nil

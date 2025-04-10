@@ -16,8 +16,8 @@ func (s *Scalonator) Scalonate() {
 		}
 
 		kernel.PMU.ReadyProcesses[i].Status = "READY"
-		kernel.PMU.ReadyProcesses[i].Pc = proc.Pc
-		kernel.PMU.ReadyProcesses[i].Registers = proc.Registers
+		kernel.PMU.ReadyProcesses[i].Pc = processor.Pc
+		kernel.PMU.ReadyProcesses[i].Registers = processor.Registers
 
 		break
 	}
@@ -32,8 +32,8 @@ func (s *Scalonator) Scalonate() {
 		kernel.PMU.CurrentProcessPID = process.PID
 		LogDebug(fmt.Sprintf("Current process PID: %d", kernel.PMU.CurrentProcessPID))
 
-		proc.Pc = process.Pc
-		proc.Registers = process.Registers
+		processor.Pc = process.Pc
+		processor.Registers = process.Registers
 
 		kernel.PMU.ReadyProcesses[i].Status = "RUNNING"
 

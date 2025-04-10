@@ -3,33 +3,37 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
+	"runtime"
 
 	"github.com/gorilla/websocket"
 )
 
 type StateMessage struct {
-	Interruption_bits map[int]bool
-	Pc                int
-	Registers         map[string]any
-	Data              []any
+	InterruptionBits map[int]bool
+	Pc               int
+	Registers        map[string]any
+	Data             []any
 }
 
 func SendMessage() {
-	if proc.Conn != nil {
+	if processor.Conn != nil {
 		modifiedData := make([]any, len(Data))
 		copy(modifiedData, Data[:])
 
 		for i, v := range modifiedData {
-			if fn, ok := v.(func(*Processor)); ok {
-				modifiedData[i] = fmt.Sprintf("%T", fn)
+			val := reflect.ValueOf(v)
+			if val.Kind() == reflect.Func {
+				funcName := runtime.FuncForPC(val.Pointer()).Name()
+				modifiedData[i] = funcName
 			}
 		}
 
 		stateMsg := StateMessage{
-			Interruption_bits: proc.InterruptionBits,
-			Pc:                kernel.MMU.GetPhysicalPcAddress(proc.Pc),
-			Registers:         proc.Registers,
-			Data:              modifiedData,
+			InterruptionBits: processor.InterruptionBits,
+			Pc:               kernel.MMU.GetPhysicalPcAddress(processor.Pc),
+			Registers:        processor.Registers,
+			Data:             modifiedData,
 		}
 
 		jsonMsg, marshErr := json.MarshalIndent(stateMsg, "", "  ")
@@ -37,7 +41,7 @@ func SendMessage() {
 			LogDebug(fmt.Sprintf("Failed to marshal message: %v", marshErr))
 		}
 
-		if socketErr := proc.Conn.WriteMessage(websocket.TextMessage, jsonMsg); socketErr != nil {
+		if socketErr := processor.Conn.WriteMessage(websocket.TextMessage, jsonMsg); socketErr != nil {
 			LogDebug(fmt.Sprintf("Failed to send message: %v", socketErr))
 			return
 		}

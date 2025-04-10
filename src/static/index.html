@@ -160,9 +160,9 @@
     
             // Update interruption bits
             interruptTableBody.innerHTML = "";
-            for (const bit in msg.Interruption_bits) {
+            for (const bit in msg.InterruptionBits) {
                 const row = document.createElement("tr");
-                const isActive = msg.Interruption_bits[bit];
+                const isActive = msg.InterruptionBits[bit];
                 row.innerHTML = `<td>${bit}</td><td>${isActive}</td>`;
                 if (isActive) {
                     row.style.backgroundColor = "green";
