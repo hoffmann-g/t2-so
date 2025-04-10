@@ -1,43 +1,45 @@
 package main
 
+import "fmt"
+
 type Scalonator struct {
 }
 
 func (s *Scalonator) Init() {}
 
 func (s *Scalonator) Scalonate() {
-	// fmt.Println("Scalonating processes 😈")
+	LogTrace("Scalonating processes 😈")
 
-	// save state of the current process
-	for i := range k.ProcessManager.ReadyProcesses {
-		if k.ProcessManager.ReadyProcesses[i].Status != "RUNNING" {
+	for i := range kernel.PMU.ReadyProcesses {
+		if kernel.PMU.ReadyProcesses[i].Status != "RUNNING" {
 			continue
 		}
 
-		k.ProcessManager.ReadyProcesses[i].Status = "READY"
-		k.ProcessManager.ReadyProcesses[i].Pc = proc.Pc
-		k.ProcessManager.ReadyProcesses[i].Registers = proc.Registers
+		kernel.PMU.ReadyProcesses[i].Status = "READY"
+		kernel.PMU.ReadyProcesses[i].Pc = proc.Pc
+		kernel.PMU.ReadyProcesses[i].Registers = proc.Registers
 
 		break
 	}
 
-	for i, process := range k.ProcessManager.ReadyProcesses {
+	for i, process := range kernel.PMU.ReadyProcesses {
 		if process.Status != "READY" {
 			continue
 		}
 
-		println("Process", process.PID, "is ready")
+		LogDebug(fmt.Sprintf("Process %d is ready", process.PID))
 
-		k.ProcessManager.CurrentProcessPID = process.PID
-		println("Current process PID:", k.ProcessManager.CurrentProcessPID)
+		kernel.PMU.CurrentProcessPID = process.PID
+		LogDebug(fmt.Sprintf("Current process PID: %d", kernel.PMU.CurrentProcessPID))
 
 		proc.Pc = process.Pc
 		proc.Registers = process.Registers
 
-		k.ProcessManager.ReadyProcesses[i].Status = "RUNNING"
+		kernel.PMU.ReadyProcesses[i].Status = "RUNNING"
 
 		return
 	}
 
-	k.ProcessManager.CurrentProcessPID = -1
+	kernel.PMU.CurrentProcessPID = -1
+	LogDebug("Entering idle state")
 }

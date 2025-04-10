@@ -6,22 +6,23 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-var k *Kernel
+var kernel *Kernel
+var proc *Processor
 
 type Processor struct {
-	Interruption_bits map[int]bool
-	Pc                int
-	Registers         map[string]any
+	InterruptionBits map[int]bool
+	Pc               int
+	Registers        map[string]any
 
-	conn *websocket.Conn
+	Conn *websocket.Conn
 }
 
 func (p *Processor) Init() {
-	p.Interruption_bits = make(map[int]bool)
+	p.InterruptionBits = make(map[int]bool)
 	p.Registers = make(map[string]any)
 
-	p.Interruption_bits[0] = false
-	p.Interruption_bits[1] = false
+	p.InterruptionBits[0] = false
+	p.InterruptionBits[1] = false
 
 	p.Pc = 0
 
@@ -30,68 +31,72 @@ func (p *Processor) Init() {
 	p.Registers["$t2"] = 0
 	p.Registers["$t3"] = 0
 
-	k = &Kernel{}
-	k.Init()
+	kernel = &Kernel{}
+	kernel.Init()
 }
 
 func (p *Processor) Run() {
-	// time.Sleep(5 * time.Second)
 	for {
 		// if p.Pc%10 == 0 {
 		// 	p.setInterruptionBit(0, true)
 		// }
 
-		if k.ProcessManager.CurrentProcessPID == -1 {
-			time.Sleep(1 * time.Second)
-			SendMessage()
+		time.Sleep(1 * time.Second)
+		SendMessage()
+
+		if kernel.PMU.CurrentProcessPID == -1 {
 			continue
 		}
 
-		SendMessage()
-
-		interruptionBit, isrAddress := p.getInterruptionServiceRoutineAddress()
-		if interruptionBit != -1 {
-			p.setInterruptionBit(interruptionBit, false)
-
-			if isr, ok := (Data)[isrAddress].(func(*Processor)); ok {
-				isr(p)
-			}
+		bit, isrAddress, occured := p.getInterruptionServiceRoutineAddress()
+		if occured {
+			p.handleInterruption(bit, isrAddress)
 		}
 
-		if instruction, ok := (Data)[k.MemoryManager.GetPhysicalPcAddress(p.Pc)].(func(*Processor)); ok {
-			instruction(p)
-		}
-
-		time.Sleep(1 * time.Second)
-
-		process, _ := k.ProcessManager.GetRunningProcess()
-		if p.Pc < (process.ProgramLength - 1) {
-			p.Pc++
-		} else {
-			k.ProcessManager.DestroyProcess(k.ProcessManager.CurrentProcessPID)
-		}
+		p.executeInstruction()
+		p.handlePc()
 	}
 }
 
-func (p *Processor) setInterruptionBit(bit int, value bool) {
-	p.Interruption_bits[bit] = value
+func (p *Processor) handlePc() {
+	process, _ := kernel.PMU.GetRunningProcess()
+
+	if p.Pc < (process.ProgramLength - 1) {
+		p.Pc++
+	} else {
+		kernel.PMU.DestroyProcess(kernel.PMU.CurrentProcessPID)
+	}
 }
 
-func (p *Processor) getInterruptionServiceRoutineAddress() (int, int) {
+func (p *Processor) handleInterruption(bit int, isrAddress int) {
+	p.InterruptionBits[bit] = false
+
+	if isr, ok := (Data)[isrAddress].(func(*Processor)); ok {
+		isr(p)
+	} else {
+		LogDebug("Error: ISR not found")
+	}
+}
+
+func (p *Processor) executeInstruction() {
+	if instruction, ok := (Data)[kernel.MMU.GetPhysicalPcAddress(p.Pc)].(func(*Processor)); ok {
+		instruction(p)
+	}
+}
+
+func (p *Processor) getInterruptionServiceRoutineAddress() (int, int, bool) {
 	rot_adresses := map[int]int{
 		0: 0x000000,
 		1: 0x000001,
 	}
 
-	for key, value := range p.Interruption_bits {
-		if value {
-			return key, rot_adresses[key]
-		}
+	if p.InterruptionBits[0] {
+		return 0, (rot_adresses[0]), true
 	}
 
-	return -1, -1
-}
+	if p.InterruptionBits[1] {
+		return 1, (rot_adresses[1]), true
+	}
 
-func (p *Processor) SetConn(conn *websocket.Conn) {
-	p.conn = conn
+	return -1, -1, false
 }

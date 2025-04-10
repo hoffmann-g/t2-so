@@ -15,8 +15,7 @@ type StateMessage struct {
 }
 
 func SendMessage() {
-	if proc.conn != nil {
-		// Create a copy of the data slice for modification
+	if proc.Conn != nil {
 		modifiedData := make([]any, len(Data))
 		copy(modifiedData, Data[:])
 
@@ -27,19 +26,19 @@ func SendMessage() {
 		}
 
 		stateMsg := StateMessage{
-			Interruption_bits: proc.Interruption_bits,
-			Pc:                k.MemoryManager.GetPhysicalPcAddress(proc.Pc),
+			Interruption_bits: proc.InterruptionBits,
+			Pc:                kernel.MMU.GetPhysicalPcAddress(proc.Pc),
 			Registers:         proc.Registers,
 			Data:              modifiedData,
 		}
 
-		jsonMsg, error := json.MarshalIndent(stateMsg, "", "  ")
-		if error != nil {
-			fmt.Println("Failed to marshal message:", error)
+		jsonMsg, marshErr := json.MarshalIndent(stateMsg, "", "  ")
+		if marshErr != nil {
+			LogDebug(fmt.Sprintf("Failed to marshal message: %v", marshErr))
 		}
 
-		if err := proc.conn.WriteMessage(websocket.TextMessage, jsonMsg); err != nil {
-			fmt.Println("Failed to send message:", err)
+		if socketErr := proc.Conn.WriteMessage(websocket.TextMessage, jsonMsg); socketErr != nil {
+			LogDebug(fmt.Sprintf("Failed to send message: %v", socketErr))
 			return
 		}
 	}

@@ -3,34 +3,33 @@ package main
 var nextPID = 1
 
 type Kernel struct {
-	ProcessManager *ProcessManager
-	MemoryManager  *MemoryManager
-	Scalonator     *Scalonator
+	PMU        *ProcessManager
+	MMU        *MemoryManager
+	Scalonator *Scalonator
 
-	TimeIsr func(*Processor)
-	IoIsr   func(*Processor)
+	TimeISR func(*Processor)
+	IOISR   func(*Processor)
 }
 
 func (k *Kernel) Init() {
-	k.MemoryManager = &MemoryManager{}
-	k.ProcessManager = &ProcessManager{}
+	k.MMU = &MemoryManager{}
+	k.PMU = &ProcessManager{}
 	k.Scalonator = &Scalonator{}
 
-	k.MemoryManager.Init()
-	k.ProcessManager.Init(k.MemoryManager)
+	k.MMU.Init()
+	k.PMU.Init(k.MMU)
 	k.Scalonator.Init()
 
-	k.TimeIsr = k.timeInterruptionRoutine
-	k.IoIsr = k.ioInterruptionRoutine
-
+	k.TimeISR = k.timeInterruptionRoutine
+	k.IOISR = k.ioInterruptionRoutine
 }
 
 func (k *Kernel) timeInterruptionRoutine(processor *Processor) {
-	// fmt.Println("Time interruption routine")
+	LogTrace("Time interruption routine")
 
 	k.Scalonator.Scalonate()
 }
 
 func (k *Kernel) ioInterruptionRoutine(processor *Processor) {
-	// fmt.Println("I/O interruption routine")
+	LogTrace("I/O interruption routine")
 }

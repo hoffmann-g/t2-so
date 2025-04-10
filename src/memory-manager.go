@@ -1,5 +1,7 @@
 package main
 
+import "fmt"
+
 var FrameSize = 8
 
 type Frame struct {
@@ -7,15 +9,12 @@ type Frame struct {
 }
 
 type MemoryManager struct {
-	PaginationTable map[int][]int
-	FrameTable      []Frame
+	ProcessPageTables map[int][]int
+	FrameTable        []Frame
 }
 
 func (mm *MemoryManager) Init() {
-	// Initialize the memory manager with a pagination table
-	// This is a placeholder; actual implementation would depend on the system architecture
-	// mm.PaginationTable = make([]map[int]any, 0)
-	mm.PaginationTable = make(map[int][]int)
+	mm.ProcessPageTables = make(map[int][]int)
 	mm.FrameTable = make([]Frame, MemorySize/FrameSize)
 
 	for i := range MemorySize / FrameSize {
@@ -29,8 +28,6 @@ func (mm *MemoryManager) Init() {
 	mm.FrameTable[2].IsFree = false
 	mm.FrameTable[3].IsFree = false
 	mm.FrameTable[4].IsFree = false
-
-	// mm.FrameTable[6].IsFree = false
 }
 
 func (mm *MemoryManager) AllocateProcess(p ProcessControlBlock) bool {
@@ -66,15 +63,17 @@ func (mm *MemoryManager) AllocateProcess(p ProcessControlBlock) bool {
 	}
 
 	// save page table for the process
-	mm.PaginationTable[p.PID] = pageTable
+	mm.ProcessPageTables[p.PID] = pageTable
 
-	println("Current PID:", p.PID)
-	for page, frame := range k.MemoryManager.PaginationTable[p.PID] {
-		println("Page:", page, "Frame:", frame)
+	LogDebug(fmt.Sprintf("Process PID: %d", p.PID))
+	LogDebug("Page Table:")
+	for page, frame := range kernel.MMU.ProcessPageTables[p.PID] {
+		LogDebug(fmt.Sprintf("Page: %d, Frame: %d", page, frame))
 	}
-	for i, frame := range k.MemoryManager.FrameTable {
+	LogDebug("Frame Table:")
+	for i, frame := range kernel.MMU.FrameTable {
 		if !frame.IsFree {
-			println("Frame:", i, "Is used")
+			LogDebug(fmt.Sprintf("Frame: %d Is used", i))
 		}
 	}
 
@@ -82,22 +81,20 @@ func (mm *MemoryManager) AllocateProcess(p ProcessControlBlock) bool {
 }
 
 func (mm *MemoryManager) DeallocateProcess(p ProcessControlBlock) {
-	// Deallocate the frames used by the process
-	pageTable := mm.PaginationTable[p.PID]
+	pageTable := mm.ProcessPageTables[p.PID]
 	for _, frame := range pageTable {
 		mm.FrameTable[frame].IsFree = true
 	}
 
-	delete(mm.PaginationTable, p.PID)
-	// mm.PaginationTable[p.PID] = pageTable
+	delete(mm.ProcessPageTables, p.PID)
 
-	if _, exists := mm.PaginationTable[p.PID]; !exists {
-		println("Page is not present")
+	if _, exists := mm.ProcessPageTables[p.PID]; !exists {
+		LogDebug("Page is not present")
 	}
 
-	for i, frame := range k.MemoryManager.FrameTable {
+	for i, frame := range kernel.MMU.FrameTable {
 		if !frame.IsFree {
-			println("Frame:", i, "Is used")
+			LogDebug(fmt.Sprintf("Frame: %d Is used", i))
 		}
 	}
 
@@ -105,29 +102,20 @@ func (mm *MemoryManager) DeallocateProcess(p ProcessControlBlock) {
 }
 
 func (mm *MemoryManager) GetPhysicalPcAddress(pc int) int {
-	if k.ProcessManager.CurrentProcessPID < 1 {
+	if kernel.PMU.CurrentProcessPID < 1 {
+		LogDebug("No process is running")
 		return 10
 	}
-	// println("Current PC: ", pc, "\n")
 
-	currentProcessPid := k.ProcessManager.CurrentProcessPID
-	// println("Current Process PID: ", currentProcessPid, "\n")
-
-	pageTable := k.MemoryManager.PaginationTable[currentProcessPid]
+	currentProcessPid := kernel.PMU.CurrentProcessPID
+	pageTable := kernel.MMU.ProcessPageTables[currentProcessPid]
 
 	pageSize := FrameSize
-
 	currentPage := pc / pageSize
-	// println("Current Page: ", currentPage, "\n")
-
 	offset := pc % pageSize
-	// println("Offset: ", offset, "\n")
-
 	currentFrame := pageTable[currentPage]
-	// println("Current Frame: ", currentFrame, "\n")
 
 	physicalAddress := (currentFrame * FrameSize) + offset
-	// println("Physical Address: ", physicalAddress, "\n")
 
 	return physicalAddress
 }

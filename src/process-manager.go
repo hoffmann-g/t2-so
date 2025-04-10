@@ -65,7 +65,7 @@ func (pm *ProcessManager) DestroyProcess(pid int) error {
 
 			pm.MemoryManager.DeallocateProcess(process)
 
-			k.Scalonator.Scalonate()
+			kernel.Scalonator.Scalonate()
 			return nil
 		}
 	}
@@ -83,7 +83,7 @@ func (pm *ProcessManager) Execute(pid int) error {
 
 		pm.ReadyProcesses[i].Status = "READY"
 
-		k.Scalonator.Scalonate()
+		kernel.Scalonator.Scalonate()
 		return nil
 
 	}

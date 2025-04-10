@@ -27,8 +27,9 @@ func HandleShell() {
 			fmt.Println("  dump -a - Dump all processes")
 			fmt.Println("  dump -p <pid> - Dump a process with the given PID")
 			fmt.Println("  exec <pid> - Execute a process with the given PID")
-			fmt.Println("  toggle-trace - Toggle trace mode")
+			fmt.Println("  log <level> - Change logging mode")
 			fmt.Println("  exit - Exit the shell")
+
 		case "create":
 			if len(tokens) < 2 {
 				fmt.Println("Usage: create <program-name>")
@@ -36,7 +37,7 @@ func HandleShell() {
 			}
 			programName := tokens[1]
 
-			pid, err := k.ProcessManager.CreateProcess(programName)
+			pid, err := kernel.PMU.CreateProcess(programName)
 			if err != nil {
 				fmt.Println("Error creating process:", err)
 				break
@@ -55,7 +56,7 @@ func HandleShell() {
 				break
 			}
 
-			err := k.ProcessManager.DestroyProcess(pidInt)
+			err := kernel.PMU.DestroyProcess(pidInt)
 			if err != nil {
 				fmt.Println("Error killing process:", err)
 			}
@@ -69,7 +70,7 @@ func HandleShell() {
 
 			switch tokens[1] {
 			case "-a":
-				for _, process := range k.ProcessManager.ReadyProcesses {
+				for _, process := range kernel.PMU.ReadyProcesses {
 					fmt.Printf("Process PID: %d, Status: %s\n", process.PID, process.Status)
 				}
 			case "-p":
@@ -94,18 +95,38 @@ func HandleShell() {
 				fmt.Println("Invalid PID:", pid)
 				break
 			}
-			err := k.ProcessManager.Execute(pidInt)
+			err := kernel.PMU.Execute(pidInt)
 			if err == nil {
 				fmt.Println("Executing process with PID:", pid)
 			} else {
 				fmt.Println("Error executing process:", err)
 			}
 
-		case "toggle-trace":
-			fmt.Println("Toggling trace mode...")
+		case "log":
+			if len(tokens) < 2 {
+				fmt.Println("Usage: log <info|trace|debug>")
+				break
+			}
+			level := tokens[1]
+			found := true
+			switch level {
+			case "info":
+				LogLevel = "INFO"
+			case "trace":
+				LogLevel = "TRACE"
+			case "debug":
+				LogLevel = "DEBUG"
+			default:
+				fmt.Println("Unknown log level:", level)
+				found = false
+			}
+			if found {
+				fmt.Println("Log level set to:", LogLevel)
+			}
 
 		case "exit":
 			return
+
 		default:
 			fmt.Println("Unknown command:", tokens[0])
 		}

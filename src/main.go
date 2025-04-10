@@ -7,7 +7,7 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-var proc *Processor
+var LogLevel string = "INFO"
 
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
@@ -18,13 +18,13 @@ var upgrader = websocket.Upgrader{
 func handleWS(w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		// fmt.Println("Falied to upgrade:", err)
+		LogDebug(fmt.Sprintf("Failed to upgrade: %v", err))
 		return
 	}
 
-	// fmt.Println("Client connected.")
+	LogTrace("Client connected.")
 
-	proc.SetConn(conn)
+	proc.Conn = conn
 
 	for {
 		_, _, err := conn.ReadMessage()
@@ -33,7 +33,7 @@ func handleWS(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// fmt.Println("Closing client connection...")
+	LogDebug("Closing client connection...")
 	conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 	conn.Close()
 }
@@ -45,20 +45,35 @@ func runServer() {
 }
 
 func main() {
-	fmt.Println("Initializing kernel...")
-
-	fmt.Println("Initializing processor...")
-	proc = &Processor{}
+	LogInfo("Initializing processor...")
 	proc.Init()
 
-	fmt.Println("Loading kernel into memory...")
+	LogInfo("Loading kernel into memory...")
 	loadKernelIntoMemory()
 
-	fmt.Println("Running processor in background thread...\n")
+	LogInfo("Running processor in background thread...")
 	go proc.Run()
 
-	fmt.Println("Starting observability server on http://localhost:8080\n")
+	LogInfo("Starting observability server on http://localhost:8080")
 	go runServer()
 
 	HandleShell()
+}
+
+func LogTrace(message string) {
+	if LogLevel == "TRACE" {
+		fmt.Println("[TRACE]:", message)
+	}
+}
+
+func LogDebug(message string) {
+	if LogLevel == "DEBUG" || LogLevel == "TRACE" {
+		fmt.Println("[DEBUG]:", message)
+	}
+}
+
+func LogInfo(message string) {
+	if LogLevel == "INFO" || LogLevel == "DEBUG" || LogLevel == "TRACE" {
+		fmt.Println("[INFO]:", message)
+	}
 }
