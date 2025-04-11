@@ -49,7 +49,7 @@ func (p *Processor) Run() {
 			p.InterruptionBits[0] = true
 		}
 
-		time.Sleep(500 * time.Millisecond)
+		time.Sleep(1 * time.Second)
 		SendStatusToWS()
 
 		if kernel.PMU.CurrentProcessPID == -1 {

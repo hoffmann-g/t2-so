@@ -77,7 +77,7 @@ func (k *Kernel) Init() {
 func (k *Kernel) timeInterruptionRoutine() {
 	LogTrace("Time interruption routine")
 
-	processor.jump(ScalonateProcessesStart - 1)
+	processor.jump(ScalonateProcessesStart)
 	// k.Scalonator.Scalonate()
 }
 

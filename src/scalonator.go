@@ -1,7 +1,5 @@
 package main
 
-import "fmt"
-
 type Scalonator struct {
 }
 
@@ -9,7 +7,7 @@ func (s *Scalonator) Init() {}
 
 func (s *Scalonator) Scalonate() {
 	// LogTrace("Scalonating processes 😈")
-	// processor.InterruptionBits[2] = false
+	processor.InterruptionBits[2] = false
 
 	// set running process to ready
 	for i, process := range kernel.PMU.ReadyProcesses {
@@ -22,7 +20,7 @@ func (s *Scalonator) Scalonate() {
 		}
 
 		kernel.PMU.ReadyProcesses[i].Status = "READY"
-		LogDebug("Process " + fmt.Sprint(kernel.PMU.ReadyProcesses[i].PID) + " set from RUNNING to READY")
+		// LogDebug("Process " + fmt.Sprint(kernel.PMU.ReadyProcesses[i].PID) + " set from RUNNING to READY")
 
 		break
 	}
@@ -44,6 +42,6 @@ func (s *Scalonator) Scalonate() {
 	}
 
 	kernel.PMU.CurrentProcessPID = -1
-	processor.InterruptionBits[2] = false
+	//processor.InterruptionBits[2] = false
 	LogDebug("Entering idle state")
 }
