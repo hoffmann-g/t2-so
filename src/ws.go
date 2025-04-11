@@ -12,8 +12,12 @@ import (
 type StateMessage struct {
 	InterruptionBits map[int]bool
 	Pc               int
+	VirtualPc        int
 	Registers        map[string]any
 	Data             []any
+	PID              int
+	PageTable        []int
+	CurrentFrame     int
 }
 
 func SendStatusToWS() {
@@ -29,11 +33,25 @@ func SendStatusToWS() {
 			}
 		}
 
+		pageTable, exists := kernel.MMU.ProcessPageTables[kernel.PMU.CurrentProcessPID]
+		if !exists {
+			pageTable = []int{}
+		}
+
+		currentFrame := -1
+		if exists && processor.Pc/FrameSize < len(pageTable) {
+			currentFrame = pageTable[processor.Pc/FrameSize]
+		}
+
 		stateMsg := StateMessage{
 			InterruptionBits: processor.InterruptionBits,
 			Pc:               kernel.MMU.GetPhysicalPcAddress(processor.Pc),
+			VirtualPc:        processor.Pc,
 			Registers:        processor.Registers,
 			Data:             modifiedData,
+			PID:              kernel.PMU.CurrentProcessPID,
+			PageTable:        pageTable,
+			CurrentFrame:     currentFrame,
 		}
 
 		jsonMsg, marshErr := json.MarshalIndent(stateMsg, "", "  ")

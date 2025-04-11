@@ -133,7 +133,20 @@
 
     <div class="block3">
         <h2>Kernel</h2>
-        <div>(Pagination tables)</div>
+        <div><strong>PID:</strong> <span id="pid">-</span></div>
+        <div><strong>Current Frame:</strong> <span id="currentFrame">-</span></div>
+        <div>
+            <h3>Page Table</h3>
+            <table id="pageTable">
+                <thead>
+                    <tr>
+                        <th>Page</th>
+                        <th>Frame</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
     </div>
 
     <script>
@@ -141,15 +154,18 @@
         const regTableBody = document.querySelector("#registers tbody");
         const memEl = document.getElementById("memory");
         const interruptTableBody = document.querySelector("#interruptions tbody");
-    
+        const pidEl = document.getElementById("pid");
+        const currentFrameEl = document.getElementById("currentFrame");
+        const pageTableBody = document.querySelector("#pageTable tbody");
+
         const socket = new WebSocket("ws://localhost:8080/ws");
-    
+
         socket.onmessage = function (event) {
             const msg = JSON.parse(event.data);
-    
+
             // Update PC
             pcEl.textContent = `0x${msg.Pc.toString(16).padStart(6, '0')} (${msg.Pc})`;
-    
+
             // Update registers table
             regTableBody.innerHTML = "";
             for (const key in msg.Registers) {
@@ -157,7 +173,7 @@
                 row.innerHTML = `<td>${key}</td><td>${msg.Registers[key]}</td>`;
                 regTableBody.appendChild(row);
             }
-    
+
             // Update interruption bits
             interruptTableBody.innerHTML = "";
             for (const bit in msg.InterruptionBits) {
@@ -169,20 +185,20 @@
                 }
                 interruptTableBody.appendChild(row);
             }
-    
+
             // Update memory view
             const sliceSize = 28;
             const half = Math.floor(sliceSize / 2);
             const data = msg.Data;
             const pc = msg.Pc;
-    
+
             let start = Math.max(0, pc - half);
             let end = Math.min(data.length, start + sliceSize);
-    
+
             if (end - start < sliceSize && end === data.length) {
                 start = Math.max(0, end - sliceSize);
             }
-    
+
             memEl.innerHTML = "";
             for (let i = start; i < end; i++) {
                 const el = document.createElement("div");
@@ -190,9 +206,21 @@
                 if (i === pc) el.classList.add("highlight");
                 memEl.appendChild(el);
             }
+
+            // Update PID and Current Frame
+            pidEl.textContent = msg.PID;
+            currentFrameEl.textContent = msg.CurrentFrame;
+
+            // Update Page Table
+            pageTableBody.innerHTML = "";
+            msg.PageTable.forEach((frame, page) => {
+                const row = document.createElement("tr");
+                row.innerHTML = `<td>${page}</td><td>${frame}</td>`;
+                pageTableBody.appendChild(row);
+            });
         };
     </script>
-    
+
 </body>
 
 </html>
