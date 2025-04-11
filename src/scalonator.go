@@ -1,5 +1,7 @@
 package main
 
+import "fmt"
+
 type Scalonator struct {
 }
 
@@ -7,22 +9,25 @@ func (s *Scalonator) Init() {}
 
 func (s *Scalonator) Scalonate() {
 	// LogTrace("Scalonating processes 😈")
-	// kernel.PMU.CurrentProcessPID = -1
-	// processor.InterruptionBits[2] = false]
-	// THIS DOESNT HAVE TIME TO EXECUTE
+	// processor.InterruptionBits[2] = false
 
-	for i := range kernel.PMU.ReadyProcesses {
-		if kernel.PMU.ReadyProcesses[i].PID != kernel.PMU.CurrentProcessPID {
+	// set running process to ready
+	for i, process := range kernel.PMU.ReadyProcesses {
+		if process.PID != kernel.PMU.CurrentProcessPID {
+			continue
+		}
+
+		if process.Status != "RUNNING" {
 			continue
 		}
 
 		kernel.PMU.ReadyProcesses[i].Status = "READY"
+		LogDebug("Process " + fmt.Sprint(kernel.PMU.ReadyProcesses[i].PID) + " set from RUNNING to READY")
 
 		break
 	}
 
-	// LogTrace("Searching for a process to run")
-
+	// find next process to run
 	for i, process := range kernel.PMU.ReadyProcesses {
 		if process.Status != "READY" {
 			continue

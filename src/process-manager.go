@@ -59,12 +59,12 @@ func (pm *ProcessManager) DestroyProcess() {
 
 	for i, process := range pm.ReadyProcesses {
 		if process.PID == pid {
-			pm.ReadyProcesses[i].Status = "ZOMBIE"
+			pm.ReadyProcesses[i].Status = "FINISHED"
 
 			kernel.MMU.DeallocateProcess(process.PID)
 
 			// LogTrace("Setting next PC to: " + fmt.Sprint(ScalonateProcessesStart-1))
-			processor.setNextPc(ScalonateProcessesStart)
+			processor.jump(ScalonateProcessesStart)
 			// kernel.Scalonator.Scalonate()
 			return
 		}
