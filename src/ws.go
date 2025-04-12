@@ -19,6 +19,7 @@ type StateMessage struct {
 	PID              int
 	PageTable        []int
 	CurrentFrame     int
+	// send ready processes
 }
 
 func SendStatusToWS() {

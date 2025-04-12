@@ -7,8 +7,9 @@ func (s *Scheduler) Init() {}
 
 func (s *Scheduler) Schedule() {
 	LogDebug("Scheduling processes")
-	cpu.Registers["$k0"] = false
+	cpu.Registers["$pam"] = 0
 
+	// save current process state
 	for i, process := range kernel.PMU.ReadyProcesses {
 		if process.PID != kernel.PMU.CurrentProcessPID {
 			continue
@@ -19,10 +20,14 @@ func (s *Scheduler) Schedule() {
 		}
 
 		kernel.PMU.ReadyProcesses[i].Status = "READY"
+		kernel.PMU.ReadyProcesses[i].Pc = cpu.Pc
+		kernel.PMU.ReadyProcesses[i].Registers = cpu.Registers
 
 		break
 	}
 
+	// look for a new process to run
+	// CHANGE CODE HERE:
 	for i, process := range kernel.PMU.ReadyProcesses {
 		if process.Status != "READY" {
 			continue

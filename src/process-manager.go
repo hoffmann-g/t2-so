@@ -7,6 +7,8 @@ import (
 var ProgramList = map[string][]any{
 	"notes": Program1,
 	"nav":   Program2,
+	"AAA":   Program3,
+	"13":    Program4,
 }
 
 type ProcessControlBlock struct {
@@ -36,11 +38,13 @@ func (pm *ProcessManager) CreateProcess(process_name string) (int, error) {
 
 	pcb := ProcessControlBlock{
 		PID:           nextPID,
-		Status:        "READY",
 		Program:       program,
 		ProgramLength: len(program),
 		Pc:            0,
 		Registers:     RegistersBase,
+
+		Status: "ADDED", // manual execution
+		// Status: "READY", // automatic execution
 	}
 
 	if !kernel.MMU.AllocateProcess(pcb) {
@@ -86,9 +90,31 @@ func (pm *ProcessManager) Execute(pid int) error {
 
 		kernel.Scheduler.Schedule()
 		return nil
-
 	}
 	return errors.New("process not found")
+}
+
+func (pm *ProcessManager) ExecuteAll() error {
+	found := false
+	for i, process := range pm.ReadyProcesses {
+		if process.Status == "RUNNING" {
+			return errors.New("process already running")
+		}
+		if process.Status == "FINISHED" {
+			return errors.New("process not found")
+		}
+
+		pm.ReadyProcesses[i].Status = "READY"
+		found = true
+
+	}
+
+	if !found {
+		return errors.New("no processes found")
+	}
+
+	kernel.Scheduler.Schedule()
+	return nil
 }
 
 func (pm *ProcessManager) GetRunningProcess() (ProcessControlBlock, bool) {

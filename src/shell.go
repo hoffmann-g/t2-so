@@ -75,6 +75,7 @@ func printHelp() {
 	fmt.Println("  dump -p <pid> - Show the PCB with the given PID")
 	fmt.Println("  dump -memory <start> <end> - Show memory contents from start to end")
 	fmt.Println("  exec <pid> - Execute a process with the given PID")
+	fmt.Println("  exec -a - Execute all processes")
 	fmt.Println("  log <level> - Change logging mode")
 	fmt.Println("  exit - Exit the shell")
 }
@@ -87,7 +88,7 @@ func handleCreate(args []string) {
 	programName := args[0]
 	pid, err := kernel.PMU.CreateProcess(programName)
 	if err != nil {
-		fmt.Println("Error creating process:", err)
+		fmt.Println("Error:", err)
 		return
 	}
 	fmt.Println("Created process from program '"+programName+"' with PID:", pid)
@@ -208,19 +209,30 @@ func handleDump(args []string) {
 
 func handleExec(args []string) {
 	if len(args) < 1 {
-		fmt.Println("Usage: exec <pid>")
+		fmt.Println("Usage: exec <pid|-a>")
 		return
 	}
-	pid, err := strconv.Atoi(args[0])
-	if err != nil {
-		fmt.Println("Invalid PID:", args[0])
-		return
-	}
-	err = kernel.PMU.Execute(pid)
-	if err != nil {
-		fmt.Println("Error executing process:", err)
-	} else {
-		fmt.Println("Executing process with PID:", pid)
+
+	switch args[0] {
+	case "-a":
+		err := kernel.PMU.ExecuteAll()
+		if err != nil {
+			fmt.Println("Error:", err)
+		} else {
+			fmt.Println("Executing all processes")
+		}
+	default:
+		pid, err := strconv.Atoi(args[0])
+		if err != nil {
+			fmt.Println("Invalid PID:", args[0])
+			return
+		}
+		err = kernel.PMU.Execute(pid)
+		if err != nil {
+			fmt.Println("Error:", err)
+		} else {
+			fmt.Println("Executing process with PID:", pid)
+		}
 	}
 }
 

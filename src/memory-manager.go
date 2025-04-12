@@ -88,7 +88,7 @@ func (mm *MemoryManager) DeallocateProcess(pid int) {
 }
 
 func (mm *MemoryManager) GetPhysicalPcAddress(pc int) int {
-	if cpu.Registers["$k0"].(bool) {
+	if cpu.Registers["$pam"] == 1 {
 		return pc
 	}
 

@@ -53,3 +53,25 @@ var Program2 = []any{
 	func() { cpu.Registers["$t2"] = cpu.Registers["$t2"].(int) * 4 },
 	func() { cpu.Registers["$t3"] = cpu.Registers["$t3"].(int) * 5 },
 }
+
+var Program3 = []any{
+	func() { cpu.Registers["$t0"] = "A" },
+	func() { cpu.Registers["$t1"] = "A" },
+	func() { cpu.Registers["$t2"] = "A" },
+	func() { cpu.Registers["$t3"] = "A" },
+	func() { cpu.Registers["$t0"] = "A" },
+	func() { cpu.Registers["$t1"] = "A" },
+	func() { cpu.Registers["$t2"] = "A" },
+	func() { cpu.Registers["$t3"] = "A" },
+}
+
+var Program4 = []any{
+	func() { cpu.Registers["$t0"] = 13 },
+	func() { cpu.Registers["$t1"] = 13 },
+	func() { cpu.Registers["$t2"] = 13 },
+	func() { cpu.Registers["$t3"] = 13 },
+	func() { cpu.Registers["$t0"] = 13 },
+	func() { cpu.Registers["$t1"] = 13 },
+	func() { cpu.Registers["$t2"] = 13 },
+	func() { cpu.Registers["$t3"] = 13 },
+}

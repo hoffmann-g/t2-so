@@ -12,7 +12,7 @@ var kernel *Kernel = &Kernel{}
 var cpu *CPU = &CPU{}
 
 var RegistersBase = map[string]any{
-	"$k0":   false,
+	"$pam":  0,
 	"$zero": 0,
 	"$jump": 0,
 	"$v0":   0,
@@ -51,7 +51,7 @@ func (c *CPU) Init() {
 func (c *CPU) Run() {
 	for c.Pc < len(Data) {
 		// simulate interruption time each 10 instructions
-		if c.Pc%10 == 0 && c.Pc != 0 && !c.Registers["$k0"].(bool) {
+		if c.Pc%10 == 0 && c.Pc != 0 && c.Registers["$pam"] == 0 {
 			c.InterruptionBits[0] = true
 		}
 
@@ -69,7 +69,7 @@ func (c *CPU) Run() {
 			c.saveCurrentProcessStatus()
 
 			c.Pc = isrAddress
-			c.Registers["$k0"] = true
+			c.Registers["$pam"] = 1
 			c.InterruptionBits[bit] = false
 
 			continue
@@ -118,6 +118,7 @@ func (c *CPU) getInterruptions() (bit int, address int, occured bool) {
 }
 
 func (c *CPU) jump(address int) {
+	// time.Sleep(1 * time.Second)
 	LogTrace("Jump to address: " + fmt.Sprint(address))
 	c.Registers["$jump"] = address
 }
