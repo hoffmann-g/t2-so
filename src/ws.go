@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"reflect"
 	"runtime"
+	"strings"
 
 	"github.com/gorilla/websocket"
 )
@@ -29,6 +30,7 @@ func SendStatusToWS() {
 			val := reflect.ValueOf(v)
 			if val.Kind() == reflect.Func {
 				funcName := runtime.FuncForPC(val.Pointer()).Name()
+				funcName = strings.TrimPrefix(funcName, "main.")
 				modifiedData[i] = funcName
 			}
 		}

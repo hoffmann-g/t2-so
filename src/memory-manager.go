@@ -88,7 +88,7 @@ func (mm *MemoryManager) DeallocateProcess(pid int) {
 }
 
 func (mm *MemoryManager) GetPhysicalPcAddress(pc int) int {
-	if cpu.InterruptionBits[2] {
+	if cpu.Registers["$k0"].(bool) {
 		return pc
 	}
 

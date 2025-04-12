@@ -12,6 +12,7 @@ var kernel *Kernel = &Kernel{}
 var cpu *CPU = &CPU{}
 
 var RegistersBase = map[string]any{
+	"$k0":   false,
 	"$zero": 0,
 	"$jump": 0,
 	"$v0":   0,
@@ -50,7 +51,7 @@ func (c *CPU) Init() {
 func (c *CPU) Run() {
 	for c.Pc < len(Data) {
 		// simulate interruption time each 10 instructions
-		if c.Pc%10 == 0 && c.Pc != 0 && !c.InterruptionBits[2] {
+		if c.Pc%10 == 0 && c.Pc != 0 && !c.Registers["$k0"].(bool) {
 			c.InterruptionBits[0] = true
 		}
 
@@ -66,9 +67,9 @@ func (c *CPU) Run() {
 		bit, isrAddress, isInterrupt := c.getInterruptions()
 		if isInterrupt {
 			c.saveCurrentProcessStatus()
-			c.Pc = isrAddress
-			c.InterruptionBits[2] = true
 
+			c.Pc = isrAddress
+			c.Registers["$k0"] = true
 			c.InterruptionBits[bit] = false
 
 			continue
@@ -87,9 +88,6 @@ func (c *CPU) Run() {
 		if c.Pc == (process.ProgramLength - 1) {
 			c.InterruptionBits[2] = true
 
-			c.Registers["$v0"] = kernel.PMU.CurrentProcessPID
-			c.Pc = DestroyProcessStart
-
 			continue
 		}
 
@@ -100,8 +98,6 @@ func (c *CPU) Run() {
 func (c *CPU) executeInstruction() {
 	if instruction, ok := (Data)[kernel.MMU.GetPhysicalPcAddress(c.Pc)].(func()); ok {
 		instruction()
-	} else {
-		LogDebug("Invalid instruction at PC: " + fmt.Sprint(c.Pc))
 	}
 }
 
@@ -112,6 +108,10 @@ func (c *CPU) getInterruptions() (bit int, address int, occured bool) {
 
 	if c.InterruptionBits[1] {
 		return 1, IOISRStart, true
+	}
+
+	if c.InterruptionBits[2] {
+		return 2, StopISRStart, true
 	}
 
 	return 0, 0, false

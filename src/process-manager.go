@@ -84,7 +84,7 @@ func (pm *ProcessManager) Execute(pid int) error {
 
 		pm.ReadyProcesses[i].Status = "READY"
 
-		kernel.Scalonator.Schedule()
+		kernel.Scheduler.Schedule()
 		return nil
 
 	}

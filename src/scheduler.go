@@ -7,7 +7,7 @@ func (s *Scheduler) Init() {}
 
 func (s *Scheduler) Schedule() {
 	LogDebug("Scheduling processes")
-	cpu.InterruptionBits[2] = false
+	cpu.Registers["$k0"] = false
 
 	for i, process := range kernel.PMU.ReadyProcesses {
 		if process.PID != kernel.PMU.CurrentProcessPID {

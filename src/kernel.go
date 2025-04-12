@@ -15,22 +15,23 @@ var (
 
 	KernelStart = 4
 
-	ISRStart     = KernelStart
-	TimeISRStart = ISRStart
+	ISRStart     = KernelStart + 0
+	TimeISRStart = ISRStart + 1
 	IOISRStart   = TimeISRStart + 1
+	StopISRStart = IOISRStart + 1
 
-	MMUStart              = ISRStart + 4
-	DealocateProcessStart = MMUStart
+	MMUStart              = ISRStart + 3
+	DealocateProcessStart = MMUStart + 1
 	AllocateProcessStart  = DealocateProcessStart + 1
 
-	PMUStart            = MMUStart + 4
-	CreateProcessStart  = PMUStart
+	PMUStart            = MMUStart + 2
+	CreateProcessStart  = PMUStart + 1
 	DestroyProcessStart = CreateProcessStart + 1
 
-	SchedulerStart         = PMUStart + 3
-	ScheduleProcessesStart = SchedulerStart
+	SchedulerStart         = PMUStart + 2
+	ScheduleProcessesStart = SchedulerStart + 1
 
-	KernelEnd = SchedulerStart + 4
+	KernelEnd = SchedulerStart + 2
 
 	KernelSize   = KernelEnd - KernelStart
 	KernelFrames = KernelSize / FrameSize
@@ -38,12 +39,13 @@ var (
 
 func LoadKernelIntoMemory() {
 	for i := range KernelFrames {
-		LogTrace(fmt.Sprintf("Allocating frame %d for kernel...", i))
+		LogDebug(fmt.Sprintf("Allocating frame %d for kernel...", i))
 		kernel.MMU.FrameTable[i] = false
 	}
 
-	Data[TimeISRStart] = kernel.TimeISR
-	Data[IOISRStart] = kernel.IOISR
+	Data[TimeISRStart] = kernel.timeInterruptionRoutine
+	Data[IOISRStart] = kernel.ioInterruptionRoutine
+	Data[StopISRStart] = kernel.stopInterruptionRoutine
 
 	Data[DealocateProcessStart] = kernel.MMU.DeallocateProcess
 	Data[AllocateProcessStart] = kernel.MMU.AllocateProcess
@@ -51,29 +53,23 @@ func LoadKernelIntoMemory() {
 	Data[CreateProcessStart] = kernel.PMU.CreateProcess
 	Data[DestroyProcessStart] = kernel.PMU.DestroyProcess
 
-	Data[ScheduleProcessesStart] = kernel.Scalonator.Schedule
+	Data[ScheduleProcessesStart] = kernel.Scheduler.Schedule
 }
 
 type Kernel struct {
-	PMU        *ProcessManager
-	MMU        *MemoryManager
-	Scalonator *Scheduler
-
-	TimeISR func()
-	IOISR   func()
+	PMU       *ProcessManager
+	MMU       *MemoryManager
+	Scheduler *Scheduler
 }
 
 func (k *Kernel) Init() {
 	k.MMU = &MemoryManager{}
 	k.PMU = &ProcessManager{}
-	k.Scalonator = &Scheduler{}
+	k.Scheduler = &Scheduler{}
 
 	k.MMU.Init()
 	k.PMU.Init(k.MMU)
-	k.Scalonator.Init()
-
-	k.TimeISR = k.timeInterruptionRoutine
-	k.IOISR = k.ioInterruptionRoutine
+	k.Scheduler.Init()
 }
 
 func (k *Kernel) timeInterruptionRoutine() {
@@ -88,4 +84,13 @@ func (k *Kernel) ioInterruptionRoutine() {
 
 	LogTrace("Jumping to Scheduler...")
 	cpu.jump(ScheduleProcessesStart)
+}
+
+func (k *Kernel) stopInterruptionRoutine() {
+	LogTrace("Stop interruption routine")
+
+	cpu.Registers["$v0"] = kernel.PMU.CurrentProcessPID
+
+	LogTrace("Jumping to PMU...")
+	cpu.jump(DestroyProcessStart)
 }
