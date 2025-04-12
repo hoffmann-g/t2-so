@@ -81,14 +81,14 @@ func (mm *MemoryManager) DeallocateProcess(pid int) {
 	delete(mm.ProcessPageTables, pid)
 
 	if _, exists := mm.ProcessPageTables[pid]; !exists {
-		// LogDebug("Page table deleted")
+		LogDebug("Page table deleted")
 	}
 
 	// NO NEED FOR ITERATING THROUGH DATA AND SETTING IT TO NIL
 }
 
 func (mm *MemoryManager) GetPhysicalPcAddress(pc int) int {
-	if processor.InterruptionBits[2] {
+	if cpu.InterruptionBits[2] {
 		return pc
 	}
 

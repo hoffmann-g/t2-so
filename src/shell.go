@@ -42,26 +42,22 @@ func HandleShell() {
 				fmt.Println("Error creating process:", err)
 				break
 			}
-			fmt.Println("Created process from:", programName, "with PID:", pid)
+			fmt.Println("Created process from program '"+programName+"' with PID:", pid)
 
 		case "kill":
-			// if len(tokens) < 2 {
-			// 	fmt.Println("Usage: kill <pid>")
-			// 	break
-			// }
-			// pid := tokens[1]
-			// pidInt, convErr := strconv.Atoi(pid)
-			// if convErr != nil {
-			// 	fmt.Println("Invalid PID:", pid)
-			// 	break
-			// }
+			if len(tokens) < 2 {
+				fmt.Println("Usage: kill <pid>")
+				break
+			}
+			pid := tokens[1]
+			pidInt, convErr := strconv.Atoi(pid)
+			if convErr != nil {
+				fmt.Println("Invalid PID:", pid)
+				break
+			}
 
-			// err := kernel.PMU.DestroyProcess(pidInt)
-			// if err != nil {
-			// 	fmt.Println("Error killing process:", err)
-			// }
-			// fmt.Println("Killed process with PID:", pid)
-
+			cpu.Registers["$v0"] = pidInt
+			kernel.PMU.DestroyProcess()
 		case "dump":
 			if len(tokens) < 2 {
 				fmt.Println("Usage: dump <-p><-a>")

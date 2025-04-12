@@ -1,15 +1,14 @@
 package main
 
-type Scalonator struct {
+type Scheduler struct {
 }
 
-func (s *Scalonator) Init() {}
+func (s *Scheduler) Init() {}
 
-func (s *Scalonator) Scalonate() {
-	// LogTrace("Scalonating processes 😈")
-	processor.InterruptionBits[2] = false
+func (s *Scheduler) Schedule() {
+	LogDebug("Scheduling processes")
+	cpu.InterruptionBits[2] = false
 
-	// set running process to ready
 	for i, process := range kernel.PMU.ReadyProcesses {
 		if process.PID != kernel.PMU.CurrentProcessPID {
 			continue
@@ -20,28 +19,24 @@ func (s *Scalonator) Scalonate() {
 		}
 
 		kernel.PMU.ReadyProcesses[i].Status = "READY"
-		// LogDebug("Process " + fmt.Sprint(kernel.PMU.ReadyProcesses[i].PID) + " set from RUNNING to READY")
 
 		break
 	}
 
-	// find next process to run
 	for i, process := range kernel.PMU.ReadyProcesses {
 		if process.Status != "READY" {
 			continue
 		}
 
 		kernel.PMU.CurrentProcessPID = process.PID
-		processor.Pc = process.Pc
-		processor.Registers = process.Registers
+		cpu.Pc = process.Pc
+		cpu.Registers = process.Registers
 
 		kernel.PMU.ReadyProcesses[i].Status = "RUNNING"
 
-		// LogTrace("Process set to run")
 		return
 	}
 
 	kernel.PMU.CurrentProcessPID = -1
-	//processor.InterruptionBits[2] = false
 	LogDebug("Entering idle state")
 }

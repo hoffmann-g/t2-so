@@ -21,7 +21,7 @@ type StateMessage struct {
 }
 
 func SendStatusToWS() {
-	if processor.Conn != nil {
+	if cpu.Conn != nil {
 		modifiedData := make([]any, len(Data))
 		copy(modifiedData, Data[:])
 
@@ -39,15 +39,15 @@ func SendStatusToWS() {
 		}
 
 		currentFrame := -1
-		if exists && processor.Pc/FrameSize < len(pageTable) {
-			currentFrame = pageTable[processor.Pc/FrameSize]
+		if exists && cpu.Pc/FrameSize < len(pageTable) {
+			currentFrame = pageTable[cpu.Pc/FrameSize]
 		}
 
 		stateMsg := StateMessage{
-			InterruptionBits: processor.InterruptionBits,
-			Pc:               kernel.MMU.GetPhysicalPcAddress(processor.Pc),
-			VirtualPc:        processor.Pc,
-			Registers:        processor.Registers,
+			InterruptionBits: cpu.InterruptionBits,
+			Pc:               kernel.MMU.GetPhysicalPcAddress(cpu.Pc),
+			VirtualPc:        cpu.Pc,
+			Registers:        cpu.Registers,
 			Data:             modifiedData,
 			PID:              kernel.PMU.CurrentProcessPID,
 			PageTable:        pageTable,
@@ -59,7 +59,7 @@ func SendStatusToWS() {
 			LogDebug(fmt.Sprintf("Failed to marshal message: %v", marshErr))
 		}
 
-		if socketErr := processor.Conn.WriteMessage(websocket.TextMessage, jsonMsg); socketErr != nil {
+		if socketErr := cpu.Conn.WriteMessage(websocket.TextMessage, jsonMsg); socketErr != nil {
 			LogDebug(fmt.Sprintf("Failed to send message: %v", socketErr))
 			return
 		}

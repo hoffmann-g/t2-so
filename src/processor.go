@@ -9,9 +9,24 @@ import (
 )
 
 var kernel *Kernel = &Kernel{}
-var processor *Processor = &Processor{}
+var cpu *CPU = &CPU{}
 
-type Processor struct {
+var RegistersBase = map[string]any{
+	"$zero": 0,
+	"$jump": 0,
+	"$v0":   0,
+	"$v1":   0,
+	"$a0":   0,
+	"$a1":   0,
+	"$a2":   0,
+	"$a3":   0,
+	"$t0":   0,
+	"$t1":   0,
+	"$t2":   0,
+	"$t3":   0,
+}
+
+type CPU struct {
 	InterruptionBits map[int]bool
 	Pc               int
 	Registers        map[string]any
@@ -19,34 +34,24 @@ type Processor struct {
 	Conn *websocket.Conn
 }
 
-func (p *Processor) Init() {
-	p.InterruptionBits = make(map[int]bool)
-	p.Registers = make(map[string]any)
+func (c *CPU) Init() {
+	c.InterruptionBits = make(map[int]bool)
+	c.Registers = make(map[string]any)
 
-	p.InterruptionBits[0] = false
-	p.InterruptionBits[1] = false
-	p.InterruptionBits[2] = false
+	c.InterruptionBits[0] = false
+	c.InterruptionBits[1] = false
+	c.InterruptionBits[2] = false
 
-	p.Pc = 0
+	c.Pc = 0
 
-	p.Registers["$jump"] = -1
-
-	p.Registers["$t0"] = 0
-	p.Registers["$t1"] = 0
-	p.Registers["$t2"] = 0
-	p.Registers["$t3"] = 0
-
-	p.Registers["$v0"] = 0
-	p.Registers["$v1"] = 0
-	p.Registers["$v2"] = 0
-	p.Registers["$v3"] = 0
+	c.Registers = RegistersBase
 }
 
-func (p *Processor) Run() {
-	for p.Pc < len(Data) {
-		// simulate interruption time
-		if p.Pc%10 == 0 && p.Pc != 0 && !p.InterruptionBits[2] {
-			p.InterruptionBits[0] = true
+func (c *CPU) Run() {
+	for c.Pc < len(Data) {
+		// simulate interruption time each 10 instructions
+		if c.Pc%10 == 0 && c.Pc != 0 && !c.InterruptionBits[2] {
+			c.InterruptionBits[0] = true
 		}
 
 		time.Sleep(1 * time.Second)
@@ -56,22 +61,22 @@ func (p *Processor) Run() {
 			continue
 		}
 
-		p.executeInstruction()
+		c.executeInstruction()
 
-		bit, isrAddress, isInterrupt := p.getInterruptions()
+		bit, isrAddress, isInterrupt := c.getInterruptions()
 		if isInterrupt {
-			p.saveCurrentProcessStatus()
-			p.Pc = isrAddress
-			p.InterruptionBits[2] = true
+			c.saveCurrentProcessStatus()
+			c.Pc = isrAddress
+			c.InterruptionBits[2] = true
 
-			p.InterruptionBits[bit] = false
+			c.InterruptionBits[bit] = false
 
 			continue
 		}
 
-		if jumpAddress, ok := p.Registers["$jump"].(int); ok && jumpAddress != -1 {
-			p.Pc = jumpAddress
-			p.Registers["$jump"] = -1
+		if jumpAddress, ok := c.Registers["$jump"].(int); ok && jumpAddress != -1 {
+			c.Pc = jumpAddress
+			c.Registers["$jump"] = -1
 
 			LogDebug("Jumping to address: " + fmt.Sprint(jumpAddress))
 
@@ -79,62 +84,52 @@ func (p *Processor) Run() {
 		}
 
 		process, _ := kernel.PMU.GetRunningProcess()
-		if p.Pc == (process.ProgramLength - 1) {
-			p.InterruptionBits[2] = true
+		if c.Pc == (process.ProgramLength - 1) {
+			c.InterruptionBits[2] = true
 
-			p.Registers["$v0"] = kernel.PMU.CurrentProcessPID
-			p.Pc = DestroyProcessStart
+			c.Registers["$v0"] = kernel.PMU.CurrentProcessPID
+			c.Pc = DestroyProcessStart
 
 			continue
 		}
 
-		p.Pc++
+		c.Pc++
 	}
 }
 
-func (p *Processor) executeInstruction() {
-	if instruction, ok := (Data)[kernel.MMU.GetPhysicalPcAddress(p.Pc)].(func()); ok {
+func (c *CPU) executeInstruction() {
+	if instruction, ok := (Data)[kernel.MMU.GetPhysicalPcAddress(c.Pc)].(func()); ok {
 		instruction()
 	} else {
-		LogDebug("Invalid instruction at PC: " + fmt.Sprint(p.Pc))
+		LogDebug("Invalid instruction at PC: " + fmt.Sprint(c.Pc))
 	}
 }
 
-func (p *Processor) getInterruptions() (bit int, address int, occured bool) {
-	if p.InterruptionBits[0] {
-		// p.saveCurrentProcessStatus()
-		// p.setNextPc(TimeISRStart)
-		// p.InterruptionBits[0] = false
-		// p.InterruptionBits[2] = true
-
+func (c *CPU) getInterruptions() (bit int, address int, occured bool) {
+	if c.InterruptionBits[0] {
 		return 0, TimeISRStart, true
 	}
 
-	if p.InterruptionBits[1] {
-		// p.saveCurrentProcessStatus()
-		// p.setNextPc(IOISRStart)
-		// p.InterruptionBits[1] = false
-		// p.InterruptionBits[2] = true
-
+	if c.InterruptionBits[1] {
 		return 1, IOISRStart, true
 	}
 
 	return 0, 0, false
 }
 
-func (p *Processor) jump(address int) {
-	// LogTrace("Jump to address: " + fmt.Sprint(address))
-	p.Registers["$jump"] = address
+func (c *CPU) jump(address int) {
+	LogTrace("Jump to address: " + fmt.Sprint(address))
+	c.Registers["$jump"] = address
 }
 
-func (p *Processor) saveCurrentProcessStatus() {
+func (c *CPU) saveCurrentProcessStatus() {
 	for i := range kernel.PMU.ReadyProcesses {
 		if kernel.PMU.ReadyProcesses[i].PID != kernel.PMU.CurrentProcessPID {
 			continue
 		}
 
-		kernel.PMU.ReadyProcesses[i].Pc = processor.Pc
-		kernel.PMU.ReadyProcesses[i].Registers = processor.Registers
+		kernel.PMU.ReadyProcesses[i].Pc = cpu.Pc
+		kernel.PMU.ReadyProcesses[i].Registers = cpu.Registers
 
 		break
 	}

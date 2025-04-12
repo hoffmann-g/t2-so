@@ -4,7 +4,7 @@ import (
 	"errors"
 )
 
-var ProgramList = map[string][]func(){
+var ProgramList = map[string][]any{
 	"notes": Program1,
 	"nav":   Program2,
 }
@@ -12,7 +12,7 @@ var ProgramList = map[string][]func(){
 type ProcessControlBlock struct {
 	PID           int
 	Status        string
-	Program       []func()
+	Program       []any
 	ProgramLength int
 	Pc            int
 	Registers     map[string]any
@@ -36,11 +36,11 @@ func (pm *ProcessManager) CreateProcess(process_name string) (int, error) {
 
 	pcb := ProcessControlBlock{
 		PID:           nextPID,
-		Status:        "ADDED",
+		Status:        "READY",
 		Program:       program,
 		ProgramLength: len(program),
 		Pc:            0,
-		Registers:     make(map[string]any),
+		Registers:     RegistersBase,
 	}
 
 	if !kernel.MMU.AllocateProcess(pcb) {
@@ -55,17 +55,16 @@ func (pm *ProcessManager) CreateProcess(process_name string) (int, error) {
 }
 
 func (pm *ProcessManager) DestroyProcess() {
-	pid := processor.Registers["$v0"].(int)
+	pid := cpu.Registers["$v0"].(int)
 
 	for i, process := range pm.ReadyProcesses {
 		if process.PID == pid {
 			pm.ReadyProcesses[i].Status = "FINISHED"
 
-			kernel.MMU.DeallocateProcess(process.PID)
+			// kernel.MMU.DeallocateProcess(process.PID)
 
-			// LogTrace("Setting next PC to: " + fmt.Sprint(ScalonateProcessesStart-1))
-			processor.jump(ScalonateProcessesStart)
-			// kernel.Scalonator.Scalonate()
+			LogTrace("Jumping to Scheduler...")
+			cpu.jump(ScheduleProcessesStart)
 			return
 		}
 	}
@@ -76,13 +75,16 @@ func (pm *ProcessManager) Execute(pid int) error {
 		if process.PID != pid {
 			continue
 		}
-		if process.Status != "ADDED" {
+		if process.Status == "RUNNING" {
 			return errors.New("process already running")
+		}
+		if process.Status == "FINISHED" {
+			return errors.New("process not found")
 		}
 
 		pm.ReadyProcesses[i].Status = "READY"
 
-		kernel.Scalonator.Scalonate()
+		kernel.Scalonator.Schedule()
 		return nil
 
 	}
