@@ -242,7 +242,7 @@
                     <td>${proc.PID}</td>
                     <td>${proc.Status}</td>
                     <td>${proc.Pc}</td>
-                    <td>${proc.QuantumUsed}/${proc.ProgramLength}</td>
+                    <td>${proc.QuantumUsed}/${proc.ProgramLength - 1}</td>
                 `;
                 readyProcessTableBody.appendChild(row);
             });

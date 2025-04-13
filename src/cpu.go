@@ -11,8 +11,9 @@ import (
 var kernel *Kernel = &Kernel{}
 var cpu *CPU = &CPU{}
 
-// var clockCycleTime = 1 * time.Second
-var clockCycleTime = 300 * time.Millisecond
+var clockCycleTime = 1 * time.Second
+
+// var clockCycleTime = 300 * time.Millisecond
 
 var RegistersBase = map[string]any{
 	"$pam":  0,
@@ -53,11 +54,6 @@ func (c *CPU) Init() {
 
 func (c *CPU) Run() {
 	for c.Pc < len(Data) {
-		// simulate interruption time each 10 instructions
-		// if c.Pc%10 == 0 && c.Pc != 0 && c.Registers["$pam"] == 0 {
-		// 	c.InterruptionBits[0] = true
-		// }
-
 		if kernel.Scheduler.quantumLeft <= 0 && c.Pc != 0 && c.Registers["$pam"] == 0 {
 			c.InterruptionBits[0] = true
 		}
@@ -91,15 +87,20 @@ func (c *CPU) Run() {
 			continue
 		}
 
-		process, _ := kernel.PMU.GetRunningProcess()
-		if c.Pc == (process.ProgramLength - 1) {
-			c.InterruptionBits[2] = true
+		process, i, exists := kernel.PMU.GetRunningProcess()
 
-			continue
+		if exists {
+			if c.Pc == (process.ProgramLength - 1) {
+				c.InterruptionBits[2] = true
+
+				continue
+			}
+
+			kernel.Scheduler.quantumLeft--
+			kernel.PMU.ReadyProcesses[i].QuantumUsed++
+
+			c.Pc++
 		}
-
-		kernel.Scheduler.quantumLeft--
-		c.Pc++
 	}
 }
 

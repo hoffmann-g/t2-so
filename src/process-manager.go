@@ -117,11 +117,11 @@ func (pm *ProcessManager) ExecuteAll() error {
 	return nil
 }
 
-func (pm *ProcessManager) GetRunningProcess() (ProcessControlBlock, bool) {
-	for _, process := range pm.ReadyProcesses {
+func (pm *ProcessManager) GetRunningProcess() (ProcessControlBlock, int, bool) {
+	for i, process := range pm.ReadyProcesses {
 		if process.Status == "RUNNING" {
-			return process, true
+			return process, i, true
 		}
 	}
-	return ProcessControlBlock{}, false
+	return ProcessControlBlock{}, -1, false
 }
