@@ -7,7 +7,7 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-var LogLevel string = "DEBUG"
+var LogLevel string = "INFO"
 
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
