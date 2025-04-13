@@ -5,6 +5,8 @@ import (
 	"slices"
 )
 
+var ContinuousExecution = false
+
 var ProgramList = map[string][]any{
 	"notes": Program1,
 	"nav":   Program2,
@@ -38,6 +40,12 @@ func (pm *ProcessManager) CreateProcess(process_name string) (int, error) {
 		return 0, errors.New("program not found")
 	}
 
+	status := "ADDED"
+
+	if ContinuousExecution {
+		status = "READY"
+	}
+
 	pcb := ProcessControlBlock{
 		PID:           nextPID,
 		Program:       program,
@@ -45,18 +53,20 @@ func (pm *ProcessManager) CreateProcess(process_name string) (int, error) {
 		Pc:            0,
 		Registers:     RegistersBase,
 		QuantumUsed:   0,
-
-		Status: "ADDED", // manual execution
-		// Status: "READY", // automatic execution
+		Status:        status,
 	}
 
 	if !kernel.MMU.AllocateProcess(pcb) {
-		return 0, errors.New("not enough memory to allocate process, please kill yourself")
+		return 0, errors.New("not enough memory to allocate process")
 	}
 
 	pm.ReadyProcesses = append(pm.ReadyProcesses, pcb)
 
 	nextPID++
+
+	if _, _, exists := pm.GetRunningProcess(); !exists && ContinuousExecution {
+		kernel.Scheduler.Schedule()
+	}
 
 	return pcb.PID, nil
 }

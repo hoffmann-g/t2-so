@@ -21,6 +21,7 @@ type StateMessage struct {
 	PageTable        []int                    `json:"PageTable"`
 	CurrentFrame     int                      `json:"CurrentFrame"`
 	ReadyProcess     []ProcessControlBlockDTO `json:"ReadyProcess"`
+	FrameSize        int                      `json:"FrameSize"`
 }
 
 // PCB - estrutura do processo
@@ -54,9 +55,8 @@ func SendStatusToWS() {
 		}
 
 		currentFrame := 0
-		if exists && cpu.Pc/FrameSize < len(pageTable) {
-			currentFrame = pageTable[cpu.Pc/FrameSize]
-		}
+		physicalPc := kernel.MMU.GetPhysicalPcAddress(cpu.Pc)
+		currentFrame = physicalPc / FrameSize
 
 		// Converte os PCBs reais em DTOs
 		readyDTOs := make([]ProcessControlBlockDTO, len(kernel.PMU.ReadyProcesses))
@@ -81,6 +81,7 @@ func SendStatusToWS() {
 			PageTable:        pageTable,
 			CurrentFrame:     currentFrame,
 			ReadyProcess:     readyDTOs,
+			FrameSize:        FrameSize,
 		}
 
 		jsonMsg, marshErr := json.MarshalIndent(stateMsg, "", "  ")

@@ -50,6 +50,9 @@ func HandleShell() {
 		case "log":
 			handleLog(args)
 
+		case "toggle-ce":
+			handleToggleCE()
+
 		case "exit":
 			return
 
@@ -77,6 +80,7 @@ func printHelp() {
 	fmt.Println("  exec <pid> - Execute a process with the given PID")
 	fmt.Println("  exec -a - Execute all processes")
 	fmt.Println("  log <level> - Change logging mode")
+	fmt.Println("  toggle-ce - Toggle CE mode")
 	fmt.Println("  exit - Exit the shell")
 }
 
@@ -234,6 +238,15 @@ func handleExec(args []string) {
 			fmt.Println("Executing process with PID:", pid)
 		}
 	}
+}
+
+func handleToggleCE() {
+	ContinuousExecution = !ContinuousExecution
+	state := "enabled"
+	if !ContinuousExecution {
+		state = "disabled"
+	}
+	fmt.Println("CE is now", state)
 }
 
 func handleLog(args []string) {

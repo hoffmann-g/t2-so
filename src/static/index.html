@@ -8,7 +8,7 @@
     <style>
         body {
             font-family: "Jetbrains Mono", monospace;
-            background-color: #000000;
+            background-color: #080808;
             color: #f5f5f5;
             margin: 0;
             padding: 0px;
@@ -20,42 +20,81 @@
         h2 {
             text-align: center;
             margin-top: 0;
-            color: #ffffff;
+            color: #d64747;
+            font-size: 24px;
         }
 
         h3 {
-            text-align: justify;
+            padding-top: 20px;
+            text-align: center;
             margin: 5px;
-            color: #888888;
+            color: #d64747;
         }
 
-        .block1,
-        .block2,
-        .block3 {
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        table th {
+            border: 1px solid #333;
+            background-color: #222;
+            padding: 4px;
+            text-align: left;
+            font-weight: bold;
+        }
+
+        table td {
+            border: 1px solid #333;
+            padding: 4px;
+            text-align: left;
+            font-size: 14px;
+            color: #c5c5c5;
+        }
+
+        .block1 {
             background-color: #111111;
-            border-radius: 0px;
+            border-radius: 8px;
             padding: 16px;
             box-sizing: border-box;
-            width: 33.33%;
-            height: auto;
+            width: 25%;
+            height: max-fit-content;
             margin-left: 5px;
             margin-right: 5px;
             margin-top: 10px;
             margin-bottom: 10px;
+            border: 1px solid #333;
+        }
+
+        .block2,
+        .block3 {
+            background-color: #111111;
+            border-radius: 8px;
+            padding: 16px;
+            box-sizing: border-box;
+            width: 37.5%;
+            height: max-fit-content;
+            margin-left: 5px;
+            margin-right: 5px;
+            margin-top: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #333;
         }
 
         .data-list {
             color: #5c5c5c;
-            background-color: #000000;
+            font-size: 13px;
+            background-color: #080808;
             display: flex;
             flex-direction: column;
             gap: 0px;
             padding: 5px;
+            border: 1px solid #333;
         }
 
         .data-list>div {
-            border: 1px solid #1b1b1b;
-            padding: 2px;
+            border: 1px solid #131313;
+            padding: 3px;
         }
 
         .highlight {
@@ -63,40 +102,34 @@
             padding: 3px;
             margin-left: 0;
             margin-right: 0;
-            background-color: #444;
+            background-color: #222;
             color: #fff;
             font-weight: bold;
         }
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 20px;
-        }
-
-        table th,
-        table td {
-            border: 1px solid #333;
-            padding: 4px;
-            text-align: left;
-        }
-
         .pc-box {
             font-size: 20px;
-            align-self: center;
             padding: 6px;
             background-color: #222;
-            display: inline-block;
+            display: block;
             border-radius: 4px;
             font-weight: bold;
             margin-bottom: 10px;
+            text-align: center;
+            border: 1px solid #333;
         }
+
+        .frame-border {
+            border-top: 1px solid #333 !important;
+            padding-top: 5px;
+        }
+        
     </style>
 </head>
 
 <body>
     <div class="block1">
-        <h2>Processor Info</h2>
+        <h2>CPU STATUS</h2>
         <div class="pc-box">PC: <span id="pc">0</span></div>
 
         <div>
@@ -127,12 +160,12 @@
     </div>
 
     <div class="block2">
-        <h2>Memory View</h2>
+        <h2>MEMORY VIEW</h2>
         <div class="data-list" id="memory"></div>
     </div>
 
     <div class="block3">
-        <h2>Kernel</h2>
+        <h2>KERNEL</h2>
         <div class="pc-box"><strong>PID:</strong> <span id="pid">-</span></div>
         <div class="pc-box"><strong>Current Frame:</strong> <span id="currentFrame">-</span></div>
         <div>
@@ -202,10 +235,11 @@
             }
 
             // Update memory view
-            const sliceSize = 28;
+            const sliceSize = 32;
             const half = Math.floor(sliceSize / 2);
             const data = msg.Data;
             const pc = msg.Pc;
+            const frameSize = msg.FrameSize;
 
             let start = Math.max(0, pc - half);
             let end = Math.min(data.length, start + sliceSize);
@@ -219,6 +253,11 @@
                 const el = document.createElement("div");
                 el.textContent = `0x${i.toString(16).padStart(6, '0')}: ${data[i]}`;
                 if (i === pc) el.classList.add("highlight");
+
+                if (i % frameSize === 0 && i !== 0) {
+                    el.classList.add("frame-border");
+                }
+
                 memEl.appendChild(el);
             }
 

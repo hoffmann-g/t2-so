@@ -6,7 +6,7 @@ var nextPID = 1
 
 const (
 	MemorySize = 512
-	FrameSize  = 4
+	FrameSize  = 8
 )
 
 var (
