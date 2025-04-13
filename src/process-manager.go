@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"slices"
 )
 
 var ProgramList = map[string][]any{
@@ -65,13 +66,7 @@ func (pm *ProcessManager) DestroyProcess() {
 
 	for i, process := range pm.ReadyProcesses {
 		if process.PID == pid {
-			pm.ReadyProcesses[i].Status = "FINISHED"
-
-			// kernel.MMU.DeallocateProcess(process.PID)
-
-			//LogTrace("Jumping to Scheduler...")
-			//cpu.jump(ScheduleProcessesStart)
-
+			pm.ReadyProcesses = slices.Delete(pm.ReadyProcesses, i, i+1)
 			LogTrace("Jumping to MMU")
 			cpu.jump(DealocateProcessStart)
 			return

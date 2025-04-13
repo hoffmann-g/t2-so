@@ -133,8 +133,8 @@
 
     <div class="block3">
         <h2>Kernel</h2>
-        <div><strong>PID:</strong> <span id="pid">-</span></div>
-        <div><strong>Current Frame:</strong> <span id="currentFrame">-</span></div>
+        <div class="pc-box"><strong>PID:</strong> <span id="pid">-</span></div>
+        <div class="pc-box"><strong>Current Frame:</strong> <span id="currentFrame">-</span></div>
         <div>
             <h3>Page Table</h3>
             <table id="pageTable">
@@ -142,6 +142,20 @@
                     <tr>
                         <th>Page</th>
                         <th>Frame</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+        <div>
+            <h3>Ready Processes</h3>
+            <table id="readyProcesses">
+                <thead>
+                    <tr>
+                        <th>PID</th>
+                        <th>Status</th>
+                        <th>PC</th>
+                        <th>Quantum</th>
                     </tr>
                 </thead>
                 <tbody></tbody>
@@ -157,6 +171,7 @@
         const pidEl = document.getElementById("pid");
         const currentFrameEl = document.getElementById("currentFrame");
         const pageTableBody = document.querySelector("#pageTable tbody");
+        const readyProcessTableBody = document.querySelector("#readyProcesses tbody");
 
         const socket = new WebSocket("ws://localhost:8080/ws");
 
@@ -218,6 +233,20 @@
                 row.innerHTML = `<td>${page}</td><td>${frame}</td>`;
                 pageTableBody.appendChild(row);
             });
+
+            // Update Ready Processes
+            readyProcessTableBody.innerHTML = "";
+            msg.ReadyProcess.forEach(proc => {
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                    <td>${proc.PID}</td>
+                    <td>${proc.Status}</td>
+                    <td>${proc.Pc}</td>
+                    <td>${proc.QuantumUsed}/${proc.ProgramLength}</td>
+                `;
+                readyProcessTableBody.appendChild(row);
+            });
+
         };
     </script>
 

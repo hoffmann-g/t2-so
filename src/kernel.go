@@ -13,7 +13,7 @@ var (
 	FrameTableSize = MemorySize / FrameSize
 	IdleStatePc    = 0
 
-	KernelStart = 4
+	KernelStart = 0
 
 	ISRStart     = KernelStart + 0
 	TimeISRStart = ISRStart + 1

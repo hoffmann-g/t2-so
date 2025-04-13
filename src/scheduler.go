@@ -29,7 +29,8 @@ func (s *Scheduler) Schedule() {
 		break
 	}
 
-	cpu.Registers = copyRegisters(RegistersBase)
+	// cpu.Registers = copyRegisters(RegistersBase)
+	// NO NEED TO RESET REGISTERS
 
 	// round robin
 	n := len(kernel.PMU.ReadyProcesses)

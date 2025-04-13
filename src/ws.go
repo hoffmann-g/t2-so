@@ -10,18 +10,30 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+// Estado que será enviado para o front-end
 type StateMessage struct {
-	InterruptionBits map[int]bool
-	Pc               int
-	VirtualPc        int
-	Registers        map[string]any
-	Data             []any
-	PID              int
-	PageTable        []int
-	CurrentFrame     int
-	// send ready processes
+	InterruptionBits map[int]bool             `json:"InterruptionBits"`
+	Pc               int                      `json:"Pc"`
+	VirtualPc        int                      `json:"VirtualPc"`
+	Registers        map[string]any           `json:"Registers"`
+	Data             []any                    `json:"Data"`
+	PID              int                      `json:"PID"`
+	PageTable        []int                    `json:"PageTable"`
+	CurrentFrame     int                      `json:"CurrentFrame"`
+	ReadyProcess     []ProcessControlBlockDTO `json:"ReadyProcess"`
 }
 
+// PCB - estrutura do processo
+type ProcessControlBlockDTO struct {
+	PID           int            `json:"PID"`
+	Status        string         `json:"Status"`
+	Pc            int            `json:"Pc"`
+	Registers     map[string]any `json:"Registers"`
+	QuantumUsed   int            `json:"QuantumUsed"`
+	ProgramLength int            `json:"ProgramLength"`
+}
+
+// Função que envia o estado atual para o WebSocket
 func SendStatusToWS() {
 	if cpu.Conn != nil {
 		modifiedData := make([]any, len(Data))
@@ -41,9 +53,22 @@ func SendStatusToWS() {
 			pageTable = []int{}
 		}
 
-		currentFrame := -1
+		currentFrame := 0
 		if exists && cpu.Pc/FrameSize < len(pageTable) {
 			currentFrame = pageTable[cpu.Pc/FrameSize]
+		}
+
+		// Converte os PCBs reais em DTOs
+		readyDTOs := make([]ProcessControlBlockDTO, len(kernel.PMU.ReadyProcesses))
+		for i, pcb := range kernel.PMU.ReadyProcesses {
+			readyDTOs[i] = ProcessControlBlockDTO{
+				PID:           pcb.PID,
+				Status:        pcb.Status,
+				Pc:            pcb.Pc,
+				Registers:     pcb.Registers,
+				QuantumUsed:   pcb.QuantumUsed,
+				ProgramLength: pcb.ProgramLength,
+			}
 		}
 
 		stateMsg := StateMessage{
@@ -55,11 +80,13 @@ func SendStatusToWS() {
 			PID:              kernel.PMU.CurrentProcessPID,
 			PageTable:        pageTable,
 			CurrentFrame:     currentFrame,
+			ReadyProcess:     readyDTOs,
 		}
 
 		jsonMsg, marshErr := json.MarshalIndent(stateMsg, "", "  ")
 		if marshErr != nil {
 			LogDebug(fmt.Sprintf("Failed to marshal message: %v", marshErr))
+			return
 		}
 
 		if socketErr := cpu.Conn.WriteMessage(websocket.TextMessage, jsonMsg); socketErr != nil {
