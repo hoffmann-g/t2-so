@@ -11,6 +11,9 @@ import (
 var kernel *Kernel = &Kernel{}
 var cpu *CPU = &CPU{}
 
+// var clockCycleTime = 1 * time.Second
+var clockCycleTime = 300 * time.Millisecond
+
 var RegistersBase = map[string]any{
 	"$pam":  0,
 	"$zero": 0,
@@ -45,17 +48,21 @@ func (c *CPU) Init() {
 
 	c.Pc = 0
 
-	c.Registers = RegistersBase
+	c.Registers = copyRegisters(RegistersBase)
 }
 
 func (c *CPU) Run() {
 	for c.Pc < len(Data) {
 		// simulate interruption time each 10 instructions
-		if c.Pc%10 == 0 && c.Pc != 0 && c.Registers["$pam"] == 0 {
+		// if c.Pc%10 == 0 && c.Pc != 0 && c.Registers["$pam"] == 0 {
+		// 	c.InterruptionBits[0] = true
+		// }
+
+		if kernel.Scheduler.quantumLeft <= 0 && c.Pc != 0 && c.Registers["$pam"] == 0 {
 			c.InterruptionBits[0] = true
 		}
 
-		time.Sleep(1 * time.Second)
+		time.Sleep(clockCycleTime)
 		SendStatusToWS()
 
 		if kernel.PMU.CurrentProcessPID == -1 {
@@ -91,6 +98,7 @@ func (c *CPU) Run() {
 			continue
 		}
 
+		kernel.Scheduler.quantumLeft--
 		c.Pc++
 	}
 }
@@ -118,7 +126,6 @@ func (c *CPU) getInterruptions() (bit int, address int, occured bool) {
 }
 
 func (c *CPU) jump(address int) {
-	// time.Sleep(1 * time.Second)
 	LogTrace("Jump to address: " + fmt.Sprint(address))
 	c.Registers["$jump"] = address
 }
@@ -129,9 +136,21 @@ func (c *CPU) saveCurrentProcessStatus() {
 			continue
 		}
 
+		if kernel.PMU.ReadyProcesses[i].Status != "RUNNING" {
+			continue
+		}
+
 		kernel.PMU.ReadyProcesses[i].Pc = cpu.Pc
-		kernel.PMU.ReadyProcesses[i].Registers = cpu.Registers
+		kernel.PMU.ReadyProcesses[i].Registers = copyRegisters(cpu.Registers)
 
 		break
 	}
+}
+
+func copyRegisters(src map[string]any) map[string]any {
+	dst := make(map[string]any)
+	for k, v := range src {
+		dst[k] = v
+	}
+	return dst
 }

@@ -72,7 +72,9 @@ func (mm *MemoryManager) AllocateProcess(p ProcessControlBlock) bool {
 	return true
 }
 
-func (mm *MemoryManager) DeallocateProcess(pid int) {
+func (mm *MemoryManager) DeallocateProcess() {
+	pid := cpu.Registers["$v0"].(int)
+
 	pageTable := mm.ProcessPageTables[pid]
 	for _, frame := range pageTable {
 		mm.FrameTable[frame] = true
@@ -85,6 +87,9 @@ func (mm *MemoryManager) DeallocateProcess(pid int) {
 	}
 
 	// NO NEED FOR ITERATING THROUGH DATA AND SETTING IT TO NIL
+
+	LogTrace("Jumping to Scheduler...")
+	cpu.jump(ScheduleProcessesStart)
 }
 
 func (mm *MemoryManager) GetPhysicalPcAddress(pc int) int {

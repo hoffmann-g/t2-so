@@ -18,6 +18,7 @@ type ProcessControlBlock struct {
 	ProgramLength int
 	Pc            int
 	Registers     map[string]any
+	QuantumUsed   int
 }
 
 type ProcessManager struct {
@@ -42,6 +43,7 @@ func (pm *ProcessManager) CreateProcess(process_name string) (int, error) {
 		ProgramLength: len(program),
 		Pc:            0,
 		Registers:     RegistersBase,
+		QuantumUsed:   0,
 
 		Status: "ADDED", // manual execution
 		// Status: "READY", // automatic execution
@@ -67,8 +69,11 @@ func (pm *ProcessManager) DestroyProcess() {
 
 			// kernel.MMU.DeallocateProcess(process.PID)
 
-			LogTrace("Jumping to Scheduler...")
-			cpu.jump(ScheduleProcessesStart)
+			//LogTrace("Jumping to Scheduler...")
+			//cpu.jump(ScheduleProcessesStart)
+
+			LogTrace("Jumping to MMU")
+			cpu.jump(DealocateProcessStart)
 			return
 		}
 	}

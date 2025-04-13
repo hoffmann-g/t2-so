@@ -75,6 +75,8 @@ func (k *Kernel) Init() {
 func (k *Kernel) timeInterruptionRoutine() {
 	LogTrace("Time interruption routine")
 
+	kernel.Scheduler.quantumLeft = kernel.Scheduler.Quantum
+
 	LogTrace("Jumping to Scheduler...")
 	cpu.jump(ScheduleProcessesStart)
 }
