@@ -9,11 +9,11 @@ import (
 var ContinuousExecution = false
 
 var ProgramList = map[string][]Instruction{
-	"notes": Program1,
-	"nav":   Program2,
-	"AAA":   Program3,
-	"13":    Program4,
-	"io":    ProgramIO,
+	"alphabet": Program1,
+	"calc":     Program2,
+	"letters":  Program3,
+	"numbers":  Program4,
+	"io-test":  ProgramIO,
 }
 
 // PCB - estrutura do processo

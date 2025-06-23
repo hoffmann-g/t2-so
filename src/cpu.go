@@ -224,11 +224,13 @@ func copyRegisters(src map[string]any) map[string]any {
 
 func (c *CPU) RequestIO(message string) {
 	process, _, exists := kernel.PMU.GetRunningProcess()
+	c.blockCurrentProcess()
 	if !exists {
 		return
 	}
 	// Adiciona pedido de IO à lista global
 	kernel.AddIORequest(process.PID, message)
 	// Sinaliza interrupção de IO
+	c.Pc++
 	c.InterruptionBits[1] = true
 }
