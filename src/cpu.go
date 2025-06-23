@@ -54,7 +54,7 @@ func (c *CPU) Init() {
 
 func (c *CPU) Run() {
 	for c.Pc < len(Data) {
-		if kernel.Scheduler.quantumLeft <= 0 && c.Pc != 0 && c.Registers["$pam"] == 0 {
+		if kernel.Scheduler.quantumLeft <= 0 && c.Pc != 0 {
 			c.InterruptionBits[0] = true
 		}
 
@@ -67,14 +67,9 @@ func (c *CPU) Run() {
 
 		c.executeInstruction()
 
-		bit, isrAddress, isInterrupt := c.getInterruptions()
+		bit, _, isInterrupt := c.getInterruptions()
 		if isInterrupt {
-			c.saveCurrentProcessStatus()
-
-			c.Pc = isrAddress
-			c.Registers["$pam"] = 1
-			c.InterruptionBits[bit] = false
-
+			c.handleInterruption(bit)
 			continue
 		}
 
@@ -112,15 +107,18 @@ func (c *CPU) executeInstruction() {
 
 func (c *CPU) getInterruptions() (bit int, address int, occured bool) {
 	if c.InterruptionBits[0] {
-		return 0, TimeISRStart, true
+		// Time interruption - chama scheduler diretamente
+		return 0, -1, true
 	}
 
 	if c.InterruptionBits[1] {
-		return 1, IOISRStart, true
+		// I/O interruption - chama scheduler diretamente
+		return 1, -1, true
 	}
 
 	if c.InterruptionBits[2] {
-		return 2, StopISRStart, true
+		// Stop interruption - chama PMU diretamente
+		return 2, -1, true
 	}
 
 	return 0, 0, false
@@ -145,6 +143,47 @@ func (c *CPU) saveCurrentProcessStatus() {
 		kernel.PMU.ReadyProcesses[i].Registers = copyRegisters(cpu.Registers)
 
 		break
+	}
+}
+
+func (c *CPU) handleInterruption(bit int) {
+	c.saveCurrentProcessStatus()
+	c.InterruptionBits[bit] = false
+
+	switch bit {
+	case 0: // Time interruption
+		LogTrace("Time interruption - calling scheduler directly")
+		kernel.Scheduler.quantumLeft = kernel.Scheduler.Quantum
+		c.callScheduler()
+	case 1: // I/O interruption
+		LogTrace("I/O interruption - calling scheduler directly")
+		c.callScheduler()
+	case 2: // Stop interruption
+		LogTrace("Stop interruption - calling PMU directly")
+		cpu.Registers["$v0"] = kernel.PMU.CurrentProcessPID
+		kernel.PMU.DestroyProcess()
+	}
+}
+
+func (c *CPU) callScheduler() {
+	LogTrace("Calling scheduler directly")
+	kernel.Scheduler.Schedule()
+
+	LogDebug(fmt.Sprintf("After scheduler: CurrentProcessPID = %d", kernel.PMU.CurrentProcessPID))
+
+	// Após o scheduler configurar o próximo processo, pula para o PC do processo
+	if kernel.PMU.CurrentProcessPID != -1 {
+		process, _, exists := kernel.PMU.GetRunningProcess()
+		if exists {
+			LogDebug(fmt.Sprintf("Found running process: PID %d, PC %d", process.PID, process.Pc))
+			cpu.Pc = process.Pc
+			cpu.Registers = copyRegisters(process.Registers)
+			LogTrace(fmt.Sprintf("Jumping to next scheduled process PID %d at PC %d", process.PID, process.Pc))
+		} else {
+			LogDebug("No running process found after scheduler")
+		}
+	} else {
+		LogDebug("CurrentProcessPID is -1 after scheduler")
 	}
 }
 

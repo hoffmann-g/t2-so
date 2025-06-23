@@ -88,27 +88,43 @@ func (mm *MemoryManager) DeallocateProcess() {
 
 	// NO NEED FOR ITERATING THROUGH DATA AND SETTING IT TO NIL
 
-	LogTrace("Jumping to Scheduler...")
-	cpu.jump(ScheduleProcessesStart)
+	LogTrace("Calling scheduler directly after deallocation")
+	kernel.Scheduler.Schedule()
+
+	// Após o scheduler configurar o próximo processo, pula para o PC do processo
+	if kernel.PMU.CurrentProcessPID != -1 {
+		process, _, exists := kernel.PMU.GetRunningProcess()
+		if exists {
+			cpu.Pc = process.Pc
+			cpu.Registers = copyRegisters(process.Registers)
+			LogTrace(fmt.Sprintf("Jumping to next scheduled process PID %d at PC %d after deallocation", process.PID, process.Pc))
+		}
+	}
 }
 
 func (mm *MemoryManager) GetPhysicalPcAddress(pc int) int {
-	if cpu.Registers["$pam"] == 1 {
-		return pc
-	}
-
 	if kernel.PMU.CurrentProcessPID == -1 {
 		return IdleStatePc
 	}
 
 	currentProcessPid := kernel.PMU.CurrentProcessPID
-	pageTable := kernel.MMU.ProcessPageTables[currentProcessPid]
+	pageTable, exists := kernel.MMU.ProcessPageTables[currentProcessPid]
+	if !exists {
+		LogDebug(fmt.Sprintf("Page table not found for PID %d", currentProcessPid))
+		return IdleStatePc
+	}
 
 	pageSize := FrameSize
 	currentPage := pc / pageSize
 	offset := pc % pageSize
-	currentFrame := pageTable[currentPage]
 
+	// Verificar se a página está dentro do range da page table
+	if currentPage >= len(pageTable) {
+		LogDebug(fmt.Sprintf("Page %d out of range for PID %d (page table size: %d)", currentPage, currentProcessPid, len(pageTable)))
+		return IdleStatePc
+	}
+
+	currentFrame := pageTable[currentPage]
 	physicalAddress := (currentFrame * FrameSize) + offset
 
 	return physicalAddress

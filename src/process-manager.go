@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"slices"
 )
 
@@ -77,14 +78,16 @@ func (pm *ProcessManager) DestroyProcess() {
 	for i, process := range pm.ReadyProcesses {
 		if process.PID == pid {
 			pm.ReadyProcesses = slices.Delete(pm.ReadyProcesses, i, i+1)
-			LogTrace("Jumping to MMU")
-			cpu.jump(DealocateProcessStart)
+			LogTrace("Calling MMU directly")
+			kernel.MMU.DeallocateProcess()
 			return
 		}
 	}
 }
 
 func (pm *ProcessManager) Execute(pid int) error {
+	LogDebug(fmt.Sprintf("Executing process PID %d", pid))
+
 	for i, process := range pm.ReadyProcesses {
 		if process.PID != pid {
 			continue
@@ -96,8 +99,10 @@ func (pm *ProcessManager) Execute(pid int) error {
 			return errors.New("process not found")
 		}
 
+		LogDebug(fmt.Sprintf("Setting process PID %d to READY", pid))
 		pm.ReadyProcesses[i].Status = "READY"
 
+		LogDebug("Calling scheduler from Execute")
 		kernel.Scheduler.Schedule()
 		return nil
 	}
