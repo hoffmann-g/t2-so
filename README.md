@@ -1,4 +1,4 @@
-# T1-SO: Simulador de Sistema Operacional
+# T2-SO: Simulador de Sistema Operacional
 
 Este projeto implementa um simulador de sistema operacional com gerenciamento de processos, memória paginada, escalonamento, interrupções, shell interativo e interface web para observabilidade. O objetivo é fornecer uma plataforma didática para estudar conceitos fundamentais de SO.
 
