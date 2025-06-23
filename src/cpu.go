@@ -45,6 +45,7 @@ func (c *CPU) Init() {
 	c.InterruptionBits[0] = false
 	c.InterruptionBits[1] = false
 	c.InterruptionBits[2] = false
+	c.InterruptionBits[3] = false
 
 	c.Pc = 0
 
@@ -106,20 +107,17 @@ func (c *CPU) executeInstruction() {
 
 func (c *CPU) getInterruptions() (bit int, address int, occured bool) {
 	if c.InterruptionBits[0] {
-		// Time interruption - chama scheduler diretamente
 		return 0, -1, true
 	}
-
 	if c.InterruptionBits[1] {
-		// I/O interruption - chama scheduler diretamente
 		return 1, -1, true
 	}
-
 	if c.InterruptionBits[2] {
-		// Stop interruption - chama PMU diretamente
 		return 2, -1, true
 	}
-
+	if c.InterruptionBits[3] {
+		return 3, -1, true
+	}
 	return 0, 0, false
 }
 
@@ -162,6 +160,10 @@ func (c *CPU) handleInterruption(bit int) {
 		LogTrace("Stop interruption - calling PMU directly")
 		cpu.Registers["$v0"] = kernel.PMU.CurrentProcessPID
 		kernel.PMU.DestroyProcess()
+	case 3: // I/O Response interruption
+		LogTrace("I/O Response interruption - unblocking process and calling scheduler")
+		c.unblockIOProcess()
+		c.callScheduler()
 	}
 }
 
@@ -190,8 +192,19 @@ func (c *CPU) callScheduler() {
 func (c *CPU) blockCurrentProcess() {
 	for i, process := range kernel.PMU.ReadyProcesses {
 		if process.PID == kernel.PMU.CurrentProcessPID && process.Status == "RUNNING" {
+			kernel.PMU.ReadyProcesses[i].Pc++
 			kernel.PMU.ReadyProcesses[i].Status = "BLOCKED"
 			return
+		}
+	}
+}
+
+func (c *CPU) unblockIOProcess() {
+	// Procura por processos que estavam bloqueados por IO e cuja resposta foi dada
+	for i, process := range kernel.PMU.ReadyProcesses {
+		if process.Status == "BLOCKED" && process.Registers["$t0"] != nil {
+			kernel.PMU.ReadyProcesses[i].Status = "READY"
+			break
 		}
 	}
 }

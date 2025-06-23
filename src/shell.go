@@ -56,6 +56,9 @@ func HandleShell() {
 		case "io":
 			handleIO()
 
+		case "clear":
+			clearScreen()
+
 		case "exit":
 			return
 
@@ -85,6 +88,7 @@ func printHelp() {
 	fmt.Println("  log <level> - Change logging mode")
 	fmt.Println("  toggle-ce - Toggle CE mode")
 	fmt.Println("  io - List and respond to pending IO requests")
+	fmt.Println("  clear - Clear the terminal screen")
 	fmt.Println("  exit - Exit the shell")
 }
 
@@ -291,4 +295,9 @@ func handleIO() {
 	if !pending {
 		fmt.Println("Nenhum pedido de IO pendente.")
 	}
+}
+
+func clearScreen() {
+	// Limpa a tela para Windows, Linux e Mac
+	fmt.Print("\033[H\033[2J")
 }

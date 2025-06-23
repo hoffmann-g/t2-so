@@ -58,7 +58,19 @@ func (k *Kernel) CompleteIORequest(pid int, input string) {
 		if req.PID == pid && !req.Done {
 			IORequests[i].Input = input
 			IORequests[i].Done = true
+			// Salva a resposta no registrador $t0 do processo
+			for j, process := range k.PMU.ReadyProcesses {
+				if process.PID == pid {
+					if process.Registers == nil {
+						process.Registers = make(map[string]any)
+					}
+					k.PMU.ReadyProcesses[j].Registers["$t0"] = input
+					break
+				}
+			}
 			k.PMU.UnblockProcess(pid)
+			// Sinaliza interrupção de resposta de IO
+			cpu.InterruptionBits[3] = true
 			break
 		}
 	}
