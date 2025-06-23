@@ -54,10 +54,6 @@ func (c *CPU) Init() {
 
 func (c *CPU) Run() {
 	for c.Pc < len(Data) {
-		if kernel.Scheduler.quantumLeft <= 0 && c.Pc != 0 {
-			c.InterruptionBits[0] = true
-		}
-
 		time.Sleep(clockCycleTime)
 		SendStatusToWS()
 
@@ -65,13 +61,19 @@ func (c *CPU) Run() {
 			continue
 		}
 
-		c.executeInstruction()
+		// Checa interrupção de tempo ANTES de executar a instrução
+		if kernel.Scheduler.quantumLeft <= 0 && c.Pc != 0 {
+			c.InterruptionBits[0] = true
+		}
 
+		// Trata interrupções ANTES de executar a instrução
 		bit, _, isInterrupt := c.getInterruptions()
 		if isInterrupt {
 			c.handleInterruption(bit)
 			continue
 		}
+
+		executed := c.executeInstruction()
 
 		if jumpAddress, ok := c.Registers["$jump"].(int); ok && jumpAddress != -1 {
 			c.Pc = jumpAddress
@@ -87,22 +89,34 @@ func (c *CPU) Run() {
 		if exists {
 			if c.Pc == (process.ProgramLength - 1) {
 				c.InterruptionBits[2] = true
-
 				continue
 			}
 
-			kernel.Scheduler.quantumLeft--
-			kernel.PMU.ReadyProcesses[i].QuantumUsed++
-
-			c.Pc++
+			if executed {
+				kernel.Scheduler.quantumLeft--
+				kernel.PMU.ReadyProcesses[i].QuantumUsed++
+				c.Pc++
+			}
 		}
 	}
 }
 
-func (c *CPU) executeInstruction() {
-	if instruction, ok := (Data)[kernel.MMU.GetPhysicalPcAddress(c.Pc)].(func()); ok {
-		instruction()
+func (c *CPU) executeInstruction() bool {
+	LogDebug(fmt.Sprintf("[CPU] Executando PID %d, PC=%d, página=%d", kernel.PMU.CurrentProcessPID, c.Pc, c.Pc/FrameSize))
+	physAddr := kernel.MMU.GetPhysicalPcAddress(c.Pc)
+	if physAddr == -1 {
+		LogDebug("Tratando page-fault: chamando HandlePageFault")
+		c.saveCurrentProcessStatus()
+		kernel.MMU.HandlePageFault(kernel.PMU.CurrentProcessPID, c.Pc/FrameSize)
+		c.callScheduler()
+		return false // Só não avança o PC em caso de page fault
 	}
+	if instruction, ok := (Data)[physAddr].(func()); ok {
+		instruction()
+		return true // Executou função, avança PC
+	}
+	// Não era função, mas não foi page fault: avança PC
+	return true
 }
 
 func (c *CPU) getInterruptions() (bit int, address int, occured bool) {
@@ -121,24 +135,13 @@ func (c *CPU) getInterruptions() (bit int, address int, occured bool) {
 	return 0, 0, false
 }
 
-func (c *CPU) jump(address int) {
-	LogTrace("Jump to address: " + fmt.Sprint(address))
-	c.Registers["$jump"] = address
-}
-
 func (c *CPU) saveCurrentProcessStatus() {
 	for i := range kernel.PMU.ReadyProcesses {
 		if kernel.PMU.ReadyProcesses[i].PID != kernel.PMU.CurrentProcessPID {
 			continue
 		}
-
-		if kernel.PMU.ReadyProcesses[i].Status != "RUNNING" {
-			continue
-		}
-
 		kernel.PMU.ReadyProcesses[i].Pc = cpu.Pc
 		kernel.PMU.ReadyProcesses[i].Registers = copyRegisters(cpu.Registers)
-
 		break
 	}
 }
@@ -158,6 +161,7 @@ func (c *CPU) handleInterruption(bit int) {
 		c.callScheduler()
 	case 2: // Stop interruption
 		LogTrace("Stop interruption - calling PMU directly")
+		LogDebug("[CPU] Tratando interrupção de término: destruindo processo e indo para idle se necessário.")
 		cpu.Registers["$v0"] = kernel.PMU.CurrentProcessPID
 		kernel.PMU.DestroyProcess()
 	case 3: // I/O Response interruption

@@ -16,6 +16,8 @@ var ProgramList = map[string][]any{
 	"io":    ProgramIO,
 }
 
+// PCB - estrutura do processo
+// A tabela de páginas agora é mantida no MemoryManager, como map[int][]PageTableEntry
 type ProcessControlBlock struct {
 	PID           int
 	Status        string
@@ -78,9 +80,18 @@ func (pm *ProcessManager) DestroyProcess() {
 
 	for i, process := range pm.ReadyProcesses {
 		if process.PID == pid {
+			LogDebug(fmt.Sprintf("[PMU] Removendo processo PID %d", pid))
 			pm.ReadyProcesses = slices.Delete(pm.ReadyProcesses, i, i+1)
 			LogTrace("Calling MMU directly")
 			kernel.MMU.DeallocateProcess()
+			// Após desalocar, chama o escalonador
+			kernel.Scheduler.Schedule()
+			// Se não houver mais processos, coloca o PC em idle
+			if len(pm.ReadyProcesses) == 0 {
+				cpu.Pc = IdleStatePc
+				LogDebug("[PMU] Nenhum processo restante. PC em idle.")
+			}
+			LogDebug(fmt.Sprintf("[PMU] PC após destruição: %d", cpu.Pc))
 			return
 		}
 	}
@@ -149,4 +160,13 @@ func (pm *ProcessManager) UnblockProcess(pid int) {
 			return
 		}
 	}
+}
+
+func (pm *ProcessManager) GetProcessByPID(pid int) ProcessControlBlock {
+	for _, process := range pm.ReadyProcesses {
+		if process.PID == pid {
+			return process
+		}
+	}
+	return ProcessControlBlock{PID: -1}
 }

@@ -1,5 +1,9 @@
 package main
 
+import (
+	"fmt"
+)
+
 type Scheduler struct {
 	LastIndex   int
 	Quantum     int
@@ -53,10 +57,22 @@ func (s *Scheduler) Schedule() {
 		s.LastIndex = i
 		s.quantumLeft = s.Quantum // Reseta o quantum
 
+		LogDebug("[SCHED] Processo escolhido para rodar:")
+		for _, p := range kernel.PMU.ReadyProcesses {
+			LogDebug(fmt.Sprintf("[SCHED] PID %d status: %s", p.PID, p.Status))
+		}
+		LogDebug(fmt.Sprintf("[SCHED] CurrentProcessPID: %d", kernel.PMU.CurrentProcessPID))
+
 		return
 	}
 
 	// Se não houver processos prontos, entra em estado ocioso
 	kernel.PMU.CurrentProcessPID = -1
 	LogDebug("Entering idle state")
+	for _, p := range kernel.PMU.ReadyProcesses {
+		LogDebug(fmt.Sprintf("[SCHED] PID %d status: %s", p.PID, p.Status))
+	}
+	LogDebug(fmt.Sprintf("[SCHED] CurrentProcessPID: %d", kernel.PMU.CurrentProcessPID))
+	LogDebug(fmt.Sprintf("[SCHED] PC atual: %d", cpu.Pc))
+	LogDebug(fmt.Sprintf("[SCHED] Lista de processos: %v", kernel.PMU.ReadyProcesses))
 }

@@ -25,16 +25,19 @@ type Kernel struct {
 	PMU       *ProcessManager
 	MMU       *MemoryManager
 	Scheduler *Scheduler
+	Disk      *DiskManager // Gerenciador de disco para swap
 }
 
 func (k *Kernel) Init() {
 	k.MMU = &MemoryManager{}
 	k.PMU = &ProcessManager{}
 	k.Scheduler = &Scheduler{}
+	k.Disk = &DiskManager{} // Inicializa o disco
 
 	k.MMU.Init()
 	k.PMU.Init(k.MMU)
 	k.Scheduler.Init()
+	k.Disk.Init(64) // Exemplo: 64 blocos de swap
 }
 
 // Estrutura para pedido de IO

@@ -51,7 +51,13 @@ func SendStatusToWS() {
 
 		pageTable, exists := kernel.MMU.ProcessPageTables[kernel.PMU.CurrentProcessPID]
 		if !exists {
-			pageTable = []int{}
+			pageTable = []PageTableEntry{}
+		}
+
+		// Converte para []int (apenas os FrameNumber)
+		frames := make([]int, len(pageTable))
+		for i, entry := range pageTable {
+			frames[i] = entry.FrameNumber
 		}
 
 		currentFrame := 0
@@ -78,7 +84,7 @@ func SendStatusToWS() {
 			Registers:        cpu.Registers,
 			Data:             modifiedData,
 			PID:              kernel.PMU.CurrentProcessPID,
-			PageTable:        pageTable,
+			PageTable:        frames,
 			CurrentFrame:     currentFrame,
 			ReadyProcess:     readyDTOs,
 			FrameSize:        FrameSize,
