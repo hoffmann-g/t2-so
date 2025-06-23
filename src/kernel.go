@@ -36,3 +36,30 @@ func (k *Kernel) Init() {
 	k.PMU.Init(k.MMU)
 	k.Scheduler.Init()
 }
+
+// Estrutura para pedido de IO
+type IORequest struct {
+	PID     int
+	Message string
+	Input   string
+	Done    bool
+}
+
+// Lista global de IO pendentes
+var IORequests []IORequest
+
+func (k *Kernel) AddIORequest(pid int, message string) {
+	IORequests = append(IORequests, IORequest{PID: pid, Message: message, Done: false})
+}
+
+// Função para liberar processo após input
+func (k *Kernel) CompleteIORequest(pid int, input string) {
+	for i, req := range IORequests {
+		if req.PID == pid && !req.Done {
+			IORequests[i].Input = input
+			IORequests[i].Done = true
+			k.PMU.UnblockProcess(pid)
+			break
+		}
+	}
+}

@@ -155,7 +155,8 @@ func (c *CPU) handleInterruption(bit int) {
 		kernel.Scheduler.quantumLeft = kernel.Scheduler.Quantum
 		c.callScheduler()
 	case 1: // I/O interruption
-		LogTrace("I/O interruption - calling scheduler directly")
+		LogTrace("I/O interruption - blocking process and calling scheduler")
+		c.blockCurrentProcess()
 		c.callScheduler()
 	case 2: // Stop interruption
 		LogTrace("Stop interruption - calling PMU directly")
@@ -186,10 +187,30 @@ func (c *CPU) callScheduler() {
 	}
 }
 
+func (c *CPU) blockCurrentProcess() {
+	for i, process := range kernel.PMU.ReadyProcesses {
+		if process.PID == kernel.PMU.CurrentProcessPID && process.Status == "RUNNING" {
+			kernel.PMU.ReadyProcesses[i].Status = "BLOCKED"
+			return
+		}
+	}
+}
+
 func copyRegisters(src map[string]any) map[string]any {
 	dst := make(map[string]any)
 	for k, v := range src {
 		dst[k] = v
 	}
 	return dst
+}
+
+func (c *CPU) RequestIO(message string) {
+	process, _, exists := kernel.PMU.GetRunningProcess()
+	if !exists {
+		return
+	}
+	// Adiciona pedido de IO à lista global
+	kernel.AddIORequest(process.PID, message)
+	// Sinaliza interrupção de IO
+	c.InterruptionBits[1] = true
 }

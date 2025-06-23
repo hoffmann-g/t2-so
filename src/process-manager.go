@@ -13,6 +13,7 @@ var ProgramList = map[string][]any{
 	"nav":   Program2,
 	"AAA":   Program3,
 	"13":    Program4,
+	"io":    ProgramIO,
 }
 
 type ProcessControlBlock struct {
@@ -139,4 +140,13 @@ func (pm *ProcessManager) GetRunningProcess() (ProcessControlBlock, int, bool) {
 		}
 	}
 	return ProcessControlBlock{}, -1, false
+}
+
+func (pm *ProcessManager) UnblockProcess(pid int) {
+	for i, process := range pm.ReadyProcesses {
+		if process.PID == pid && process.Status == "BLOCKED" {
+			pm.ReadyProcesses[i].Status = "READY"
+			return
+		}
+	}
 }

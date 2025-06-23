@@ -75,3 +75,15 @@ var Program4 = []any{
 	func() { cpu.Registers["$t2"] = 13 },
 	func() { cpu.Registers["$t3"] = 13 },
 }
+
+var ProgramIO = []any{
+	IORequestFunc("Digite seu nome:"),
+	func() { cpu.Registers["$t0"] = "Resposta: " + cpu.Registers["$t0"].(string) },
+	func() { cpu.Registers["$t1"] = 42 },
+}
+
+func IORequestFunc(message string) func() {
+	return func() {
+		cpu.RequestIO(message)
+	}
+}

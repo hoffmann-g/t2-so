@@ -53,6 +53,9 @@ func HandleShell() {
 		case "toggle-ce":
 			handleToggleCE()
 
+		case "io":
+			handleIO()
+
 		case "exit":
 			return
 
@@ -81,6 +84,7 @@ func printHelp() {
 	fmt.Println("  exec -a - Execute all processes")
 	fmt.Println("  log <level> - Change logging mode")
 	fmt.Println("  toggle-ce - Toggle CE mode")
+	fmt.Println("  io - List and respond to pending IO requests")
 	fmt.Println("  exit - Exit the shell")
 }
 
@@ -267,4 +271,24 @@ func handleLog(args []string) {
 		return
 	}
 	fmt.Println("Log level set to:", LogLevel)
+}
+
+func handleIO() {
+	pending := false
+	for _, req := range IORequests {
+		if !req.Done {
+			fmt.Printf("[IO] PID %d pede: %s\n", req.PID, req.Message)
+			fmt.Print("Digite resposta para PID ", req.PID, ": ")
+			scanner := bufio.NewScanner(os.Stdin)
+			if scanner.Scan() {
+				input := scanner.Text()
+				kernel.CompleteIORequest(req.PID, input)
+				fmt.Println("Processo liberado!")
+			}
+			pending = true
+		}
+	}
+	if !pending {
+		fmt.Println("Nenhum pedido de IO pendente.")
+	}
 }
