@@ -1,6 +1,6 @@
 package main
 
-var Data [MemorySize]any
+var Data [MemorySize]Instruction
 
 // func loadKernelIntoMemory() {
 // 	// load ISR

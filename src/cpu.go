@@ -111,7 +111,8 @@ func (c *CPU) executeInstruction() bool {
 		c.callScheduler()
 		return false // Só não avança o PC em caso de page fault
 	}
-	if instruction, ok := (Data)[physAddr].(func()); ok {
+	code := Data[physAddr].Code
+	if instruction, ok := code.(func()); ok {
 		instruction()
 		return true // Executou função, avança PC
 	}

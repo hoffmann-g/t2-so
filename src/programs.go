@@ -1,32 +1,37 @@
 package main
 
-var Program1 = []any{
-	"A",
-	"B",
-	"C",
-	"D",
-	"E",
-	"F",
-	"G",
-	"H",
-	"I",
-	"J",
-	"K",
-	"L",
-	"M",
-	"N",
-	"O",
-	"P",
-	"Q",
-	"R",
-	"S",
-	"T",
-	"U",
-	"V",
-	"W",
-	"X",
-	"Y",
-	"Z",
+type Instruction struct {
+	Label string
+	Code  any
+}
+
+var Program1 = []Instruction{
+	{"A", "A"},
+	{"B", "B"},
+	{"C", "C"},
+	{"D", "D"},
+	{"E", "E"},
+	{"F", "F"},
+	{"G", "G"},
+	{"H", "H"},
+	{"I", "I"},
+	{"J", "J"},
+	{"K", "K"},
+	{"L", "L"},
+	{"M", "M"},
+	{"N", "N"},
+	{"O", "O"},
+	{"P", "P"},
+	{"Q", "Q"},
+	{"R", "R"},
+	{"S", "S"},
+	{"T", "T"},
+	{"U", "U"},
+	{"V", "V"},
+	{"W", "W"},
+	{"X", "X"},
+	{"Y", "Y"},
+	{"Z", "Z"},
 }
 
 // var Program1 = []any{
@@ -72,43 +77,43 @@ var Program1 = []any{
 // 	func() { cpu.Registers["$t3"] = cpu.Registers["$t3"].(int) - 1 },
 // }
 
-var Program2 = []any{
-	func() { cpu.Registers["$t0"] = 1 },
-	func() { cpu.Registers["$t1"] = 1 },
-	func() { cpu.Registers["$t2"] = 1 },
-	func() { cpu.Registers["$t3"] = 1 },
-	func() { cpu.Registers["$t0"] = cpu.Registers["$t0"].(int) * 2 },
-	func() { cpu.Registers["$t1"] = cpu.Registers["$t1"].(int) * 3 },
-	func() { cpu.Registers["$t2"] = cpu.Registers["$t2"].(int) * 4 },
-	func() { cpu.Registers["$t3"] = cpu.Registers["$t3"].(int) * 5 },
+var Program2 = []Instruction{
+	{"SET $t0", func() { cpu.Registers["$t0"] = 1 }},
+	{"SET $t1", func() { cpu.Registers["$t1"] = 1 }},
+	{"SET $t2", func() { cpu.Registers["$t2"] = 1 }},
+	{"SET $t3", func() { cpu.Registers["$t3"] = 1 }},
+	{"MUL $t0", func() { cpu.Registers["$t0"] = cpu.Registers["$t0"].(int) * 2 }},
+	{"MUL $t1", func() { cpu.Registers["$t1"] = cpu.Registers["$t1"].(int) * 3 }},
+	{"MUL $t2", func() { cpu.Registers["$t2"] = cpu.Registers["$t2"].(int) * 4 }},
+	{"MUL $t3", func() { cpu.Registers["$t3"] = cpu.Registers["$t3"].(int) * 5 }},
 }
 
-var Program3 = []any{
-	func() { cpu.Registers["$t0"] = "A" },
-	func() { cpu.Registers["$t1"] = "A" },
-	func() { cpu.Registers["$t2"] = "A" },
-	func() { cpu.Registers["$t3"] = "A" },
-	func() { cpu.Registers["$t0"] = "A" },
-	func() { cpu.Registers["$t1"] = "A" },
-	func() { cpu.Registers["$t2"] = "A" },
-	func() { cpu.Registers["$t3"] = "A" },
+var Program3 = []Instruction{
+	{"SET $t0", func() { cpu.Registers["$t0"] = "A" }},
+	{"SET $t1", func() { cpu.Registers["$t1"] = "A" }},
+	{"SET $t2", func() { cpu.Registers["$t2"] = "A" }},
+	{"SET $t3", func() { cpu.Registers["$t3"] = "A" }},
+	{"SET $t0", func() { cpu.Registers["$t0"] = "A" }},
+	{"SET $t1", func() { cpu.Registers["$t1"] = "A" }},
+	{"SET $t2", func() { cpu.Registers["$t2"] = "A" }},
+	{"SET $t3", func() { cpu.Registers["$t3"] = "A" }},
 }
 
-var Program4 = []any{
-	func() { cpu.Registers["$t0"] = 13 },
-	func() { cpu.Registers["$t1"] = 13 },
-	func() { cpu.Registers["$t2"] = 13 },
-	func() { cpu.Registers["$t3"] = 13 },
-	func() { cpu.Registers["$t0"] = 13 },
-	func() { cpu.Registers["$t1"] = 13 },
-	func() { cpu.Registers["$t2"] = 13 },
-	func() { cpu.Registers["$t3"] = 13 },
+var Program4 = []Instruction{
+	{"SET $t0", func() { cpu.Registers["$t0"] = 13 }},
+	{"SET $t1", func() { cpu.Registers["$t1"] = 13 }},
+	{"SET $t2", func() { cpu.Registers["$t2"] = 13 }},
+	{"SET $t3", func() { cpu.Registers["$t3"] = 13 }},
+	{"SET $t0", func() { cpu.Registers["$t0"] = 13 }},
+	{"SET $t1", func() { cpu.Registers["$t1"] = 13 }},
+	{"SET $t2", func() { cpu.Registers["$t2"] = 13 }},
+	{"SET $t3", func() { cpu.Registers["$t3"] = 13 }},
 }
 
-var ProgramIO = []any{
-	IORequestFunc("Digite seu nome:"),
-	func() { cpu.Registers["$t0"] = "Resposta: " + cpu.Registers["$t0"].(string) },
-	func() { cpu.Registers["$t1"] = 42 },
+var ProgramIO = []Instruction{
+	{"IO REQUEST", IORequestFunc("Digite seu nome:")},
+	{"CONCAT", func() { cpu.Registers["$t0"] = "Resposta: " + cpu.Registers["$t0"].(string) }},
+	{"SET $t1", func() { cpu.Registers["$t1"] = 42 }},
 }
 
 func IORequestFunc(message string) func() {

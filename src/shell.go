@@ -201,14 +201,14 @@ func handleDump(args []string) {
 			return
 		}
 		for i := start; i <= end; i++ {
-			if Data[i] != nil {
-				val := reflect.ValueOf(Data[i])
+			if Data[i].Code != nil {
+				val := reflect.ValueOf(Data[i].Code)
 				if val.Kind() == reflect.Func {
 					funcName := runtime.FuncForPC(val.Pointer()).Name()
 					funcName = strings.TrimPrefix(funcName, "main.")
 					fmt.Printf("Address %d: %v\n", i, funcName)
 				} else {
-					fmt.Printf("Address %d: %v\n", i, Data[i])
+					fmt.Printf("Address %d: %v\n", i, Data[i].Code)
 				}
 			} else {
 				fmt.Printf("Address %d: nil\n", i)

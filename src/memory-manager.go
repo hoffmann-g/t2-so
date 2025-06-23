@@ -29,9 +29,9 @@ type MemoryManager struct {
 // Cada bloco representa uma página salva no disco
 
 type DiskManager struct {
-	Blocks     [][]any // cada bloco é uma página (slice de instruções/dados)
-	FreeBlocks []int   // índices dos blocos livres
-	Size       int     // número total de blocos
+	Blocks     [][]Instruction // cada bloco é uma página (slice de instruções/dados)
+	FreeBlocks []int           // índices dos blocos livres
+	Size       int             // número total de blocos
 }
 
 func (mm *MemoryManager) Init() {
@@ -187,7 +187,7 @@ func (mm *MemoryManager) GetPhysicalPcAddress(pc int) int {
 // Inicializa o disco com um número fixo de blocos
 func (dm *DiskManager) Init(size int) {
 	dm.Size = size
-	dm.Blocks = make([][]any, size)
+	dm.Blocks = make([][]Instruction, size)
 	dm.FreeBlocks = make([]int, size)
 	for i := 0; i < size; i++ {
 		dm.FreeBlocks[i] = i
@@ -213,17 +213,17 @@ func (dm *DiskManager) FreeBlock(idx int) {
 }
 
 // Salva uma página no bloco especificado
-func (dm *DiskManager) SavePage(idx int, page []any) {
+func (dm *DiskManager) SavePage(idx int, page []Instruction) {
 	if idx >= 0 && idx < dm.Size {
-		dm.Blocks[idx] = make([]any, len(page))
+		dm.Blocks[idx] = make([]Instruction, len(page))
 		copy(dm.Blocks[idx], page)
 	}
 }
 
 // Carrega uma página do bloco especificado
-func (dm *DiskManager) LoadPage(idx int) []any {
+func (dm *DiskManager) LoadPage(idx int) []Instruction {
 	if idx >= 0 && idx < dm.Size && dm.Blocks[idx] != nil {
-		page := make([]any, len(dm.Blocks[idx]))
+		page := make([]Instruction, len(dm.Blocks[idx]))
 		copy(page, dm.Blocks[idx])
 		return page
 	}
@@ -274,7 +274,7 @@ func (mm *MemoryManager) HandlePageFault(pid int, pageNumber int) {
 					// Copia conteúdo do quadro para o disco
 					start := victimEntry.FrameNumber * FrameSize
 					end := start + FrameSize
-					pageData := make([]any, FrameSize)
+					pageData := make([]Instruction, FrameSize)
 					copy(pageData, Data[start:end])
 					kernel.Disk.SavePage(diskBlock, pageData)
 					// Atualiza tabela de páginas da vítima
@@ -302,7 +302,7 @@ func (mm *MemoryManager) HandlePageFault(pid int, pageNumber int) {
 	// 3. Carrega a página demandada
 	start := frame * FrameSize
 	end := start + FrameSize
-	var pageData []any
+	var pageData []Instruction
 	if entry.OnDisk {
 		// Carrega do disco
 		pageData = kernel.Disk.LoadPage(entry.DiskBlock)
@@ -317,13 +317,13 @@ func (mm *MemoryManager) HandlePageFault(pid int, pageNumber int) {
 			LogDebug("[PF] ERRO: Processo não encontrado!")
 			return
 		}
-		pageData = make([]any, FrameSize)
+		pageData = make([]Instruction, FrameSize)
 		for i := 0; i < FrameSize; i++ {
 			progIdx := pageNumber*FrameSize + i
 			if progIdx < len(proc.Program) {
 				pageData[i] = proc.Program[progIdx]
 			} else {
-				pageData[i] = nil
+				pageData[i] = Instruction{"", nil}
 			}
 		}
 		LogDebug("[PF] Página carregada do programa original.")

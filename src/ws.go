@@ -3,9 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"reflect"
-	"runtime"
-	"strings"
 
 	"github.com/gorilla/websocket"
 )
@@ -16,7 +13,7 @@ type StateMessage struct {
 	Pc               int                      `json:"Pc"`
 	VirtualPc        int                      `json:"VirtualPc"`
 	Registers        map[string]any           `json:"Registers"`
-	Data             []any                    `json:"Data"`
+	Data             []string                 `json:"Data"`
 	PID              int                      `json:"PID"`
 	PageTable        []int                    `json:"PageTable"`
 	CurrentFrame     int                      `json:"CurrentFrame"`
@@ -37,16 +34,9 @@ type ProcessControlBlockDTO struct {
 // Função que envia o estado atual para o WebSocket
 func SendStatusToWS() {
 	if cpu.Conn != nil {
-		modifiedData := make([]any, len(Data))
-		copy(modifiedData, Data[:])
-
-		for i, v := range modifiedData {
-			val := reflect.ValueOf(v)
-			if val.Kind() == reflect.Func {
-				funcName := runtime.FuncForPC(val.Pointer()).Name()
-				funcName = strings.TrimPrefix(funcName, "main.")
-				modifiedData[i] = funcName
-			}
+		modifiedData := make([]string, len(Data))
+		for i, v := range Data {
+			modifiedData[i] = v.Label
 		}
 
 		pageTable, exists := kernel.MMU.ProcessPageTables[kernel.PMU.CurrentProcessPID]

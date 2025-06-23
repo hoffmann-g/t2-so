@@ -8,7 +8,7 @@ import (
 
 var ContinuousExecution = false
 
-var ProgramList = map[string][]any{
+var ProgramList = map[string][]Instruction{
 	"notes": Program1,
 	"nav":   Program2,
 	"AAA":   Program3,
@@ -21,7 +21,7 @@ var ProgramList = map[string][]any{
 type ProcessControlBlock struct {
 	PID           int
 	Status        string
-	Program       []any
+	Program       []Instruction
 	ProgramLength int
 	Pc            int
 	Registers     map[string]any
