@@ -16,7 +16,6 @@ var clockCycleTime = 1 * time.Second
 // var clockCycleTime = 300 * time.Millisecond
 
 var RegistersBase = map[string]any{
-	"$pam":  0,
 	"$zero": 0,
 	"$jump": 0,
 	"$v0":   0,
