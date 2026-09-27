@@ -1,3 +1,11 @@
+# T2-SO: Operating System Simulator
+
+## English summary
+
+This project is an operating system simulator written in Go for an operating systems course. Each process has a process control block (PCB) with its PID, state, registers, program counter and quantum usage. Memory is paged, with one page table per process: only the first page is loaded when a process is created, the remaining pages are loaded on page fault, and pages are moved to a swap disk when no frame is free. A round-robin scheduler preempts processes after a fixed quantum, and the simulated CPU handles timer, I/O and process-termination interrupts. An interactive shell creates, runs, inspects and kills processes, and a web interface served over WebSocket at http://localhost:8080 shows the CPU, memory, page table and process list on each clock cycle. To run it, install Go and execute `go run .` from the `src/` directory, since the web interface files are served from `src/static`.
+
+---
+
 # T2-SO: Simulador de Sistema Operacional
 
 Este projeto implementa um simulador de sistema operacional com gerenciamento de processos, memória paginada, escalonamento, interrupções, shell interativo e interface web para observabilidade. O objetivo é fornecer uma plataforma didática para estudar conceitos fundamentais de SO.
