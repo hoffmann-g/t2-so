@@ -1,4 +1,4 @@
-module t1-so
+module t2-so
 
 go 1.24.2
 
