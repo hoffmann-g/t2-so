@@ -2,7 +2,7 @@
 
 ## English summary
 
-This project is an operating system simulator written in Go for an operating systems course. Each process has a process control block (PCB) with its PID, state, registers, program counter and quantum usage. Memory is paged, with one page table per process: only the first page is loaded when a process is created, the remaining pages are loaded on page fault, and pages are moved to a swap disk when no frame is free. A round-robin scheduler preempts processes after a fixed quantum, and the simulated CPU handles timer, I/O and process-termination interrupts. An interactive shell creates, runs, inspects and kills processes, and a web interface served over WebSocket at http://localhost:8080 shows the CPU, memory, page table and process list on each clock cycle. To run it, install Go and execute `go run .` from the `src/` directory, since the web interface files are served from `src/static`.
+This project is an operating system simulator written in Go for an operating systems course. Each process has a process control block (PCB) with its PID, state, registers, program counter and quantum usage. Memory is paged, with one page table per process: only the first page is loaded when a process is created, the remaining pages are loaded on page fault, and pages are moved to a swap disk when no frame is free. A round-robin scheduler preempts processes after a fixed quantum, and the simulated CPU handles timer, I/O and process-termination interrupts. An interactive shell creates, runs, inspects and kills processes, and a web interface served over WebSocket at http://localhost:8080 shows the CPU, memory, page table and process list on each clock cycle. To run it, install Go and execute `go run ./src` from the repository root, or build a binary with `go build -o t2-so ./src` and run `./t2-so`; the web interface is embedded in the binary.
 
 ---
 
@@ -86,7 +86,7 @@ O simulador abstrai os principais componentes de um SO: CPU, Kernel, Gerenciador
 ### 6. Observabilidade via WebSocket e Interface Web
 
 - **Servidor WebSocket** integrado.
-- **Interface web** (em `static/index.html`) exibe em tempo real:
+- **Interface web** (em `src/static/index.html`) exibe em tempo real:
   - Estado da CPU (PC, registradores, bits de interrupção)
   - Memória (visualização paginada)
   - Tabela de páginas do processo atual
@@ -104,8 +104,8 @@ O simulador abstrai os principais componentes de um SO: CPU, Kernel, Gerenciador
 ## Como Executar
 
 1. **Requisitos**: Go instalado.
-2. **Compilar**: `go build -o main.exe ./src`
-3. **Executar**: `./main.exe`
+2. **Compilar**: `go build -o t2-so ./src`
+3. **Executar**: `./t2-so` (a interface web vai embutida no binário)
 4. **Acessar a interface web**: [http://localhost:8080](http://localhost:8080)
 
 ---
@@ -152,6 +152,3 @@ O simulador abstrai os principais componentes de um SO: CPU, Kernel, Gerenciador
 - O projeto é modular e extensível, facilitando a inclusão de novas features.
 - Ideal para fins didáticos, trabalhos de SO e experimentação com conceitos de sistemas operacionais.
 
----
-
-Se precisar de exemplos de uso, detalhes de implementação ou quiser expandir o README com prints ou GIFs, é só pedir!
