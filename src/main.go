@@ -1,11 +1,16 @@
 package main
 
 import (
+	"embed"
 	"fmt"
+	"io/fs"
 	"net/http"
 
 	"github.com/gorilla/websocket"
 )
+
+//go:embed static
+var staticFiles embed.FS
 
 var LogLevel string = "INFO"
 
@@ -40,7 +45,11 @@ func handleWS(w http.ResponseWriter, r *http.Request) {
 
 func runServer() {
 	http.HandleFunc("/ws", handleWS)
-	http.Handle("/", http.FileServer(http.Dir("static")))
+	staticFS, err := fs.Sub(staticFiles, "static")
+	if err != nil {
+		panic(err)
+	}
+	http.Handle("/", http.FileServer(http.FS(staticFS)))
 	http.ListenAndServe(":8080", nil)
 }
 
